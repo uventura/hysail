@@ -10,6 +10,9 @@ packages = [
 [tool.hatch.build]
 include = ["hysail/**/*.py"]
 
+[tool.pytest.ini_options]
+testpaths = ["hysail/tests"]
+
 [project]
 name = "hysail"
 version = "0.0.1"
@@ -30,7 +33,10 @@ dependencies = [
     "rich==13.9.1",
     "pytz==2024.2",
     "lt-code==0.3.3",
+    "pytest==9.0.2",
+    "ruff==0.15.6"
 ]
 
 [project.scripts]
 hysail = "hysail.hysail:main"
+hysail-test = "hysail.test:main"
