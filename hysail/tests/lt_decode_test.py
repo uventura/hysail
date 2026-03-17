@@ -17,7 +17,7 @@ def generate_packets(data, block_size, n_packets=20):
     return packets
 
 
-def test_full_decode_success():
+def test_when_enough_packets_then_full_decode_succeeds():
     data = b"ABCDEFGH"
     block_size = 2
 
@@ -30,7 +30,7 @@ def test_full_decode_success():
     assert dec.data == data
 
 
-def test_decode_incomplete():
+def test_when_too_few_packets_then_decode_fails():
     data = b"ABCDEFGH"
     block_size = 2
 
@@ -46,7 +46,7 @@ def test_decode_incomplete():
         _ = dec.data
 
 
-def test_blocks_structure():
+def test_when_decoded_then_blocks_match_k():
     data = b"ABCDEFGH"
     block_size = 2
 
@@ -62,7 +62,7 @@ def test_blocks_structure():
             assert isinstance(b, bytes)
 
 
-def test_reduce_packet_behavior():
+def test_when_known_block_present_then_reduce_packet_simplifies():
     dec = LtCodeDecode([], k=2)
 
     # manually set one known block
@@ -81,7 +81,7 @@ def test_reduce_packet_behavior():
     assert pkt["data"] == b"B"
 
 
-def test_try_resolve():
+def test_when_degree_one_packet_then_try_resolve_stores_block():
     dec = LtCodeDecode([], k=2)
 
     pkt = {
@@ -96,7 +96,7 @@ def test_try_resolve():
     assert dec.blocks[0] == b"Z"
 
 
-def test_normalize_packets_copy():
+def test_when_normalizing_packets_then_indices_are_copied():
     packets = [{"degree": 1, "indices": [0], "data": b"A"}]
 
     dec = LtCodeDecode([], k=1)

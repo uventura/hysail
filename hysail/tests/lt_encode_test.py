@@ -5,7 +5,7 @@ import random
 import pytest
 
 
-def test_degree_range():
+def test_when_encoding_then_degree_within_valid_range():
     data = b"HelloWorld"
     enc = LtCodeEncode(data, block_size=2)
 
@@ -13,14 +13,14 @@ def test_degree_range():
     assert 1 <= enc.degree <= k
 
 
-def test_indices_match_degree():
+def test_when_encoding_then_indices_count_matches_degree():
     data = b"HelloWorld"
     enc = LtCodeEncode(data, block_size=2)
 
     assert len(enc.indices) == enc.degree
 
 
-def test_indices_are_valid():
+def test_when_encoding_then_indices_are_within_valid_range():
     data = b"HelloWorld"
     block_size = 2
     enc = LtCodeEncode(data, block_size)
@@ -31,14 +31,14 @@ def test_indices_are_valid():
         assert 0 <= idx < k
 
 
-def test_packet_is_bytes():
+def test_when_encoding_then_packet_is_bytes():
     data = b"HelloWorld"
     enc = LtCodeEncode(data, block_size=2)
 
     assert isinstance(enc.packet, bytes)
 
 
-def test_single_block():
+def test_when_single_small_block_then_degree_and_packet_reflect_it():
     data = b"A"
     enc = LtCodeEncode(data, block_size=10)
 
@@ -47,7 +47,7 @@ def test_single_block():
     assert enc.packet == b"A"
 
 
-def test_split_blocks():
+def test_when_splitting_data_then_blocks_are_sized_correctly():
     data = b"ABCDEFGH"
     enc = LtCodeEncode(data, block_size=2)
 
@@ -55,7 +55,7 @@ def test_split_blocks():
     assert blocks == [b"AB", b"CD", b"EF", b"GH"]
 
 
-def test_xor_correctness():
+def test_when_xoring_blocks_then_packet_matches_manual_xor():
     data = b"\x01\x02\x03\x04"
     block_size = 1
 
@@ -71,7 +71,7 @@ def test_xor_correctness():
     assert enc.packet == result
 
 
-def test_deterministic_behavior():
+def test_when_seeding_rng_then_encoding_is_deterministic():
     data = b"HelloWorld"
 
     random.seed(42)
@@ -85,14 +85,14 @@ def test_deterministic_behavior():
     assert enc1.packet == enc2.packet
 
 
-def test_empty_data():
+def test_when_data_empty_then_encoding_raises_value_error():
     data = b""
 
     with pytest.raises(ValueError):
         LtCodeEncode(data, block_size=2)
 
 
-def test_indices_order_with_mock():
+def test_when_mocking_random_then_indices_order_is_respected():
     data = b"ABCDEFGH"  # blocks: [AB, CD, EF, GH]
     block_size = 2
 
@@ -109,7 +109,7 @@ def test_indices_order_with_mock():
         assert enc.indices == [2, 0, 1]
 
 
-def test_packet_respects_indices_order():
+def test_when_indices_order_forced_then_packet_respects_that_order():
     data = b"ABCDEFGH"  # [AB, CD, EF, GH]
     block_size = 2
 
