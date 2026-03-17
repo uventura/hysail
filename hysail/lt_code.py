@@ -65,12 +65,17 @@ class LtCodeEncode:
 
 class LtCodeDecode:
     def __init__(self, packets, num_blocks, remove_padding=True):
+        if num_blocks <= 0:
+            raise ValueError("num_blocks must be > 0")
+
         self._blocks = [None] * num_blocks
         self._decoded = False
         self._remove_padding = remove_padding
 
+        self._num_blocks = num_blocks
         self._packets = [p.copy() for p in packets]
 
+        self._validate_packets()
         self._decode()
 
     @property
@@ -92,6 +97,16 @@ class LtCodeDecode:
     @property
     def is_decoded(self):
         return self._decoded
+
+    def _validate_packets(self):
+        """
+        Ensure all packet indices are within valid range.
+        Prevents IndexError during decoding.
+        """
+        for pkt in self._packets:
+            for idx in pkt.indices:
+                if idx < 0 or idx >= self._num_blocks:
+                    raise ValueError(f"Packet index out of range: {idx}")
 
     def _decode(self):
         progress = True
@@ -115,8 +130,10 @@ class LtCodeDecode:
         data = pkt.data
 
         for idx in pkt.indices:
-            if self._blocks[idx] is not None:
-                data = self._xor_bytes(data, self._blocks[idx])
+            block = self._blocks[idx]
+
+            if block is not None:
+                data = self._xor_bytes(data, block)
             else:
                 new_indices.append(idx)
 
@@ -141,6 +158,7 @@ class LtCodeDecode:
             return data
 
         pad = data[-1]
+
         if pad == 0 or pad > len(data):
             return data
 
