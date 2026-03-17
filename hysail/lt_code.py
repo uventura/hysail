@@ -13,9 +13,12 @@ class LtPacket:
 
 
 class LtCodeEncode:
-    def __init__(self, data, block_size):
+    def __init__(self, data, block_size, num_packets=1):
         if not data:
             raise ValueError("Data cannot be empty")
+
+        if num_packets <= 0:
+            raise ValueError("num_packets must be > 0")
 
         self._block_size = block_size
         self._data = self._pad(data)
@@ -23,22 +26,28 @@ class LtCodeEncode:
         self._blocks = self._split_blocks(self._data, block_size)
         self._num_blocks = len(self._blocks)
 
-        self._packet = self._encode()
+        self._packets = self._encode(num_packets)
 
     @property
-    def packet(self):
-        return self._packet
+    def packets(self):
+        return self._packets
 
     @property
     def num_blocks(self):
         return self._num_blocks
 
-    def _encode(self):
-        degree = random.randint(1, self._num_blocks)
-        indices = random.sample(range(self._num_blocks), degree)
-        data = reduce(self._xor_bytes, (self._blocks[i] for i in indices))
+    def _encode(self, num_packets):
+        packets = []
 
-        return LtPacket(degree, indices, data)
+        for _ in range(num_packets):
+            degree = random.randint(1, self._num_blocks)
+            indices = random.sample(range(self._num_blocks), degree)
+
+            data = reduce(self._xor_bytes, (self._blocks[i] for i in indices))
+
+            packets.append(LtPacket(degree, indices, data))
+
+        return packets
 
     def _pad(self, data):
         pad = self._block_size - (len(data) % self._block_size)
