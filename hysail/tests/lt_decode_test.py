@@ -1,4 +1,5 @@
 import pytest
+import random
 
 from hysail.lt_code import LtCodeEncode, LtCodeDecode
 
@@ -17,13 +18,19 @@ def generate_packets(data, block_size, n_packets=20):
     return packets
 
 
+def compute_k_from_packets(packets):
+    return max(max(pkt["indices"]) for pkt in packets) + 1
+
+
 def test_when_enough_packets_then_full_decode_succeeds():
+    random.seed(42)  # avoid flaky behavior
+
     data = b"ABCDEFGH"
     block_size = 2
 
-    packets = generate_packets(data, block_size, n_packets=30)
+    packets = generate_packets(data, block_size, n_packets=40)
 
-    k = len(data) // block_size
+    k = compute_k_from_packets(packets)
     dec = LtCodeDecode(packets, k)
 
     assert dec.is_decoded
@@ -31,13 +38,14 @@ def test_when_enough_packets_then_full_decode_succeeds():
 
 
 def test_when_too_few_packets_then_decode_fails():
+    random.seed(42)
+
     data = b"ABCDEFGH"
     block_size = 2
 
-    # too few packets → likely failure
     packets = generate_packets(data, block_size, n_packets=2)
 
-    k = len(data) // block_size
+    k = compute_k_from_packets(packets)
     dec = LtCodeDecode(packets, k)
 
     assert not dec.is_decoded
@@ -47,12 +55,14 @@ def test_when_too_few_packets_then_decode_fails():
 
 
 def test_when_decoded_then_blocks_match_k():
+    random.seed(42)
+
     data = b"ABCDEFGH"
     block_size = 2
 
-    packets = generate_packets(data, block_size, n_packets=30)
+    packets = generate_packets(data, block_size, n_packets=40)
 
-    k = len(data) // block_size
+    k = compute_k_from_packets(packets)
     dec = LtCodeDecode(packets, k)
 
     assert len(dec.blocks) == k
@@ -65,7 +75,6 @@ def test_when_decoded_then_blocks_match_k():
 def test_when_known_block_present_then_reduce_packet_simplifies():
     dec = LtCodeDecode([], k=2)
 
-    # manually set one known block
     dec._blocks[0] = b"A"
 
     pkt = {
@@ -102,6 +111,5 @@ def test_when_normalizing_packets_then_indices_are_copied():
     dec = LtCodeDecode([], k=1)
     normalized = dec._normalize_packets(packets)
 
-    # ensure deep-ish copy of indices
     assert normalized[0]["indices"] == packets[0]["indices"]
     assert normalized[0]["indices"] is not packets[0]["indices"]

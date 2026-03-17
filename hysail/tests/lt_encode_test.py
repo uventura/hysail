@@ -4,12 +4,20 @@ from unittest.mock import patch
 import random
 import pytest
 
+def compute_k_with_padding(data, block_size):
+    padding = block_size - (len(data) % block_size)
+    if padding == 0:
+        padding = block_size
+    padded_len = len(data) + padding
+    return padded_len // block_size
+
 
 def test_when_encoding_then_degree_within_valid_range():
     data = b"HelloWorld"
-    enc = LtCodeEncode(data, block_size=2)
+    block_size = 2
+    enc = LtCodeEncode(data, block_size)
 
-    k = len(data) // 2 + (1 if len(data) % 2 else 0)
+    k = compute_k_with_padding(data, block_size)
     assert 1 <= enc.degree <= k
 
 
@@ -25,7 +33,7 @@ def test_when_encoding_then_indices_are_within_valid_range():
     block_size = 2
     enc = LtCodeEncode(data, block_size)
 
-    k = len(data) // block_size + (1 if len(data) % block_size else 0)
+    k = compute_k_with_padding(data, block_size)
 
     for idx in enc.indices:
         assert 0 <= idx < k
@@ -40,19 +48,30 @@ def test_when_encoding_then_packet_is_bytes():
 
 def test_when_single_small_block_then_degree_and_packet_reflect_it():
     data = b"A"
-    enc = LtCodeEncode(data, block_size=10)
+    block_size = 10
 
-    assert enc.degree == 1
-    assert enc.indices == [0]
-    assert enc.packet == b"A"
+    with (
+        patch("random.randint", return_value=1),
+        patch("random.sample", return_value=[0]),
+    ):
+        enc = LtCodeEncode(data, block_size)
+
+        expected = b"A" + bytes([9]) * 9  # PKCS padding
+
+        assert enc.degree == 1
+        assert enc.indices == [0]
+        assert enc.packet == expected
 
 
 def test_when_splitting_data_then_blocks_are_sized_correctly():
     data = b"ABCDEFGH"
-    enc = LtCodeEncode(data, block_size=2)
+    block_size = 2
 
-    blocks = enc._split_blocks(data, 2)
-    assert blocks == [b"AB", b"CD", b"EF", b"GH"]
+    enc = LtCodeEncode(data, block_size)
+    blocks = enc._split_blocks(data, block_size)
+
+    assert blocks[:-1] == [b"AB", b"CD", b"EF", b"GH"]
+    assert blocks[-1] == b"\x02\x02"
 
 
 def test_when_xoring_blocks_then_packet_matches_manual_xor():

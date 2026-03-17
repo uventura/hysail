@@ -23,6 +23,9 @@ class LtCodeEncode:
         return self._packet
 
     def _encode(self, data, block_size):
+        if not data:
+            raise ValueError("Data cannot be empty")
+
         blocks = self._split_blocks(data, block_size)
         k = len(blocks)
         d = random.randint(1, k)
@@ -34,16 +37,26 @@ class LtCodeEncode:
         self._packet = packet
 
     def _split_blocks(self, data, block_size):
-        return [data[i : i + block_size] for i in range(0, len(data), block_size)]
+        padding = block_size - (len(data) % block_size)
+        if padding == 0:
+            padding = block_size
+
+        data += bytes([padding]) * padding
+
+        return [
+            data[i:i+block_size]
+            for i in range(0, len(data), block_size)
+        ]
 
     def _xor_bytes(self, a, b):
         return bytes(x ^ y for x, y in zip(a, b))
 
 
 class LtCodeDecode:
-    def __init__(self, packets, k):
+    def __init__(self, packets, k, remove_padding=True):
         self._blocks = [None] * k
         self._decoded = False
+        self._remove_padding = remove_padding
 
         self._decode(packets)
 
@@ -55,7 +68,13 @@ class LtCodeDecode:
     def data(self):
         if not self._decoded:
             raise ValueError("Decoding not complete")
-        return b"".join(self._blocks)
+
+        data = b"".join(self._blocks)
+
+        if self._remove_padding:
+            data = self._strip_padding(data)
+
+        return data
 
     @property
     def is_decoded(self):
@@ -114,6 +133,20 @@ class LtCodeDecode:
             return True
 
         return False
+
+    def _strip_padding(self, data):
+        if not data:
+            return data
+
+        pad = data[-1]
+
+        if pad == 0 or pad > len(data):
+            return data  # fallback: assume no padding
+
+        if data[-pad:] != bytes([pad]) * pad:
+            return data  # invalid padding
+
+        return data[:-pad]
 
     @staticmethod
     def _xor_bytes(a, b):
