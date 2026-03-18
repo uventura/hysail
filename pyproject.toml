@@ -11,7 +11,9 @@ packages = [
 include = ["hysail/**/*.py"]
 
 [tool.pytest.ini_options]
-testpaths = ["hysail/tests"]
+testpaths = [
+    "hysail/**/tests",
+]
 
 [project]
 name = "hysail"
