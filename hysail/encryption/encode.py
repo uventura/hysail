@@ -2,6 +2,7 @@ import random
 from functools import reduce
 
 from hysail.encryption.block import Block
+from hysail.utils.galois import bytes_to_poly_coeffs
 
 
 # It uses LtCode
@@ -17,6 +18,8 @@ class Encode:
         self._data = self._pad(data)
 
         self._blocks = self._split_blocks(self._data, block_size)
+        self._mac_blocks = self._calculate_mac_for_each_block()
+
         self._num_blocks = len(self._blocks)
 
         self._packets = self._encode(num_packets)
@@ -49,6 +52,11 @@ class Encode:
 
     def _split_blocks(self, data, block_size):
         return [data[i : i + block_size] for i in range(0, len(data), block_size)]
+
+    def _calculate_mac_for_each_block(self):
+        mac_blocks = []
+        for block in self._blocks:
+            mac_blocks.append(bytes_to_poly_coeffs(block))
 
     @staticmethod
     def _xor_bytes(a, b):
