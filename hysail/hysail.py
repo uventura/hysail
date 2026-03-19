@@ -9,6 +9,8 @@ def main():
     for index, packet in enumerate(encoded.packets):
         print(index, packet.indices)
 
+    print(encoded.mac_blocks)
+
 
 if __name__ == "__main__":
     main()

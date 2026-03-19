@@ -2,7 +2,8 @@ import random
 from functools import reduce
 
 from hysail.encryption.block import Block
-from hysail.utils.galois import bytes_to_poly_coeffs
+from hysail.encryption.local_mac import LocalMac
+import hysail.utils.galois as ga
 
 
 # It uses LtCode
@@ -32,6 +33,10 @@ class Encode:
     def num_blocks(self):
         return self._num_blocks
 
+    @property
+    def mac_blocks(self):
+        return self._mac_blocks
+
     def _encode(self, num_packets):
         packets = []
 
@@ -56,7 +61,14 @@ class Encode:
     def _calculate_mac_for_each_block(self):
         mac_blocks = []
         for block in self._blocks:
-            mac_blocks.append(bytes_to_poly_coeffs(block))
+            representation = ga.bytes_to_poly_coeffs(block)
+            random_polynomial = ga.generate_challenge_polynomial()
+            mac = LocalMac(
+                polynomial=random_polynomial,
+                mac=ga.gf2_poly_mod(representation, random_polynomial),
+            )
+            mac_blocks.append(mac)
+        return mac_blocks
 
     @staticmethod
     def _xor_bytes(a, b):
