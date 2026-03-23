@@ -7,3 +7,4 @@ from dataclasses import dataclass
 class LocalMac:
     polynomial: np.ndarray
     mac: np.ndarray
+    block_index: int

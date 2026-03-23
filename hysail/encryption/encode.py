@@ -60,12 +60,13 @@ class Encode:
 
     def _calculate_mac_for_each_block(self):
         mac_blocks = []
-        for block in self._blocks:
+        for index, block in enumerate(self._blocks):
             representation = ga.bytes_to_poly_coeffs(block)
             random_polynomial = ga.generate_challenge_polynomial()
             mac = LocalMac(
                 polynomial=random_polynomial,
                 mac=ga.gf2_poly_mod(representation, random_polynomial),
+                block_index=index,
             )
             mac_blocks.append(mac)
         return mac_blocks
