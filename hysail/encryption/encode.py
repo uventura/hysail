@@ -5,6 +5,7 @@ from hysail.encryption.block import Block
 from hysail.encryption.local_mac import LocalMac
 import hysail.utils.galois as ga
 
+POLYNOMIAL_SET_SIZE = 40
 
 # It uses LtCode
 class Encode:
@@ -19,6 +20,7 @@ class Encode:
         self._data = self._pad(data)
 
         self._blocks = self._split_blocks(self._data, block_size)
+        self._polynomials = self._polynomial_set_generation()
         self._mac_blocks = self._calculate_mac_for_each_block()
 
         self._num_blocks = len(self._blocks)
@@ -37,11 +39,20 @@ class Encode:
     def mac_blocks(self):
         return self._mac_blocks
 
+    @property
+    def polynomials(self):
+        return self._polynomials
+
     def _encode(self, num_packets):
         packets = []
+        contains_degree_1 = False
 
         for _ in range(num_packets):
             degree = random.randint(1, self._num_blocks)
+            if degree == 1:
+                contains_degree_1 = True
+            if not contains_degree_1 and _ == num_packets - 1:
+                degree = 1
             indices = random.sample(range(self._num_blocks), degree)
 
             data = reduce(self._xor_bytes, (self._blocks[i] for i in indices))
@@ -59,18 +70,30 @@ class Encode:
         return [data[i : i + block_size] for i in range(0, len(data), block_size)]
 
     def _calculate_mac_for_each_block(self):
-        mac_blocks = []
+        mac_blocks = {}
         for index, block in enumerate(self._blocks):
             representation = ga.bytes_to_poly_coeffs(block)
-            random_polynomial = ga.generate_challenge_polynomial()
-            mac = LocalMac(
-                polynomial=random_polynomial,
-                mac=ga.gf2_poly_mod(representation, random_polynomial),
-                block_index=index,
-            )
-            mac_blocks.append(mac)
+            mac_blocks[index] = []
+
+            for p_index, polynomial in enumerate(self._polynomials):
+                mac = LocalMac(
+                    mac=ga.gf2_poly_mod(representation, polynomial),
+                    polynomial_index=p_index,
+                    block_index=index,
+                )
+                mac_blocks[index].append(mac)
+
         return mac_blocks
 
     @staticmethod
     def _xor_bytes(a, b):
         return bytes(x ^ y for x, y in zip(a, b))
+
+    def _polynomial_set_generation(self):
+        polynomials = []
+        for _ in range(POLYNOMIAL_SET_SIZE):
+            polynomial = ga.generate_challenge_polynomial()
+            if polynomial.tolist() not in [p.tolist() for p in polynomials]:
+                polynomials.append(polynomial)
+        return polynomials
+
