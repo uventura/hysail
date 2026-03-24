@@ -5,5 +5,8 @@ class Block:
         self.data = data
         self.server = None
 
+    def set_server(self, server):
+        self.server = server
+
     def copy(self):
         return Block(self.degree, self.indices.copy(), self.data)
