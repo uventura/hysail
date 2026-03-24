@@ -7,6 +7,7 @@ import hysail.utils.galois as ga
 
 POLYNOMIAL_SET_SIZE = 40
 
+
 # It uses LtCode
 class Encode:
     def __init__(self, data, block_size, num_packets=1):
@@ -29,7 +30,8 @@ class Encode:
 
     @property
     def packets(self):
-        return self._packets
+        values = self._packets.values()
+        return [pkt for sublist in values for pkt in sublist]
 
     @property
     def num_blocks(self):
@@ -44,7 +46,7 @@ class Encode:
         return self._polynomials
 
     def _encode(self, num_packets):
-        packets = []
+        packets = {}
         contains_degree_1 = False
 
         for _ in range(num_packets):
@@ -53,10 +55,12 @@ class Encode:
                 contains_degree_1 = True
             if not contains_degree_1 and _ == num_packets - 1:
                 degree = 1
-            indices = random.sample(range(self._num_blocks), degree)
 
+            indices = random.sample(range(self._num_blocks), degree)
             data = reduce(self._xor_bytes, (self._blocks[i] for i in indices))
-            packets.append(Block(degree, indices, data))
+            if degree not in packets:
+                packets[degree] = []
+            packets[degree].append(Block(degree, indices, data))
 
         return packets
 
@@ -96,4 +100,3 @@ class Encode:
             if polynomial.tolist() not in [p.tolist() for p in polynomials]:
                 polynomials.append(polynomial)
         return polynomials
-

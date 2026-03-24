@@ -6,10 +6,13 @@ def main():
     block_size = 8
 
     encoded = Encode(data, block_size, 30)
-    for index, packet in enumerate(encoded.packets):
-        print(index, packet.indices)
+    packets = encoded.packets
+    print(packets)
+    # print(packets)
+    # for index, packet in enumerate(encoded.packets):
+    #     print(index, packet)
 
-    print(encoded.mac_blocks)
+    # print(encoded.mac_blocks)
 
 
 if __name__ == "__main__":
