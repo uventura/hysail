@@ -1,107 +1,114 @@
 class Decode:
-    def __init__(self, packets, num_blocks, remove_padding=True):
-        if num_blocks <= 0:
-            raise ValueError("num_blocks must be > 0")
+    def __init__(self, servers, polynomials, local_blocks, local_mac):
+        print("Starting decode process...")
+        print(local_blocks[1])
+        # print(polynomials)
+        # print(local_mac)
+        # print(servers)
 
-        self._blocks = [None] * num_blocks
-        self._decoded = False
-        self._remove_padding = remove_padding
+    # def __init__(self, packets, num_blocks, remove_padding=True):
+    #     if num_blocks <= 0:
+    #         raise ValueError("num_blocks must be > 0")
 
-        self._num_blocks = num_blocks
-        self._packets = [p.copy() for p in packets]
+    #     self._blocks = [None] * num_blocks
+    #     self._decoded = False
+    #     self._remove_padding = remove_padding
 
-        self._validate_packets()
-        self._decode()
+    #     self._num_blocks = num_blocks
+    #     self._packets = [p.copy() for p in packets]
 
-    @property
-    def blocks(self):
-        return self._blocks
+    #     self._validate_packets()
+    #     self._decode()
 
-    @property
-    def data(self):
-        if not self._decoded:
-            raise ValueError("Decoding not complete")
+    # @property
+    # def blocks(self):
+    #     return self._blocks
 
-        data = b"".join(self._blocks)
+    # @property
+    # def data(self):
+    #     if not self._decoded:
+    #         raise ValueError("Decoding not complete")
 
-        if self._remove_padding:
-            data = self._strip_padding(data)
+    #     data = b"".join(self._blocks)
 
-        return data
+    #     if self._remove_padding:
+    #         data = self._strip_padding(data)
 
-    @property
-    def is_decoded(self):
-        return self._decoded
+    #     return data
 
-    def _validate_packets(self):
-        """
-        Ensure all packet indices are within valid range.
-        Prevents IndexError during decoding.
-        """
-        for pkt in self._packets:
-            for idx in pkt.indices:
-                if idx < 0 or idx >= self._num_blocks:
-                    raise ValueError(f"Packet index out of range: {idx}")
+    # @property
+    # def is_decoded(self):
+    #     return self._decoded
 
-    def _decode(self):
-        progress = True
+    # def _validate_packets(self):
+    #     """
+    #     Ensure all packet indices are within valid range.
+    #     Prevents IndexError during decoding.
+    #     """
+    #     for pkt in self._packets:
+    #         for idx in pkt.indices:
+    #             if idx < 0 or idx >= self._num_blocks:
+    #                 raise ValueError(f"Packet index out of range: {idx}")
 
-        while progress:
-            progress = False
+    # def _decode(self):
+    #     progress = True
 
-            for pkt in self._packets:
-                if pkt.degree == 0:
-                    continue
+    #     while progress:
+    #         progress = False
 
-                self._reduce_packet(pkt)
+    #         for pkt in self._packets:
+    #             if pkt.degree == 0:
+    #                 continue
 
-                if self._try_resolve(pkt):
-                    progress = True
+    #             self._reduce_packet(pkt)
 
-        self._decoded = all(block is not None for block in self._blocks)
+    #             if self._try_resolve(pkt):
+    #                 progress = True
 
-    def _reduce_packet(self, pkt):
-        new_indices = []
-        data = pkt.data
+    #     self._decoded = all(block is not None for block in self._blocks)
 
-        for idx in pkt.indices:
-            block = self._blocks[idx]
+    # def _reduce_packet(self, pkt):
+    #     new_indices = []
+    #     data = pkt.data
 
-            if block is not None:
-                data = self._xor_bytes(data, block)
-            else:
-                new_indices.append(idx)
+    #     for idx in pkt.indices:
+    #         block = self._blocks[idx]
 
-        pkt.indices = new_indices
-        pkt.degree = len(new_indices)
-        pkt.data = data
+    #         if block is not None:
+    #             data = self._xor_bytes(data, block)
+    #         else:
+    #             new_indices.append(idx)
 
-    def _try_resolve(self, pkt):
-        if pkt.degree != 1:
-            return False
+    #     pkt.indices = new_indices
+    #     pkt.degree = len(new_indices)
+    #     pkt.data = data
 
-        idx = pkt.indices[0]
+    # def _try_resolve(self, pkt):
+    #     if pkt.degree != 1:
+    #         return False
 
-        if self._blocks[idx] is None:
-            self._blocks[idx] = pkt.data
-            return True
+    #     idx = pkt.indices[0]
 
-        return False
+    #     if self._blocks[idx] is None:
+    #         self._blocks[idx] = pkt.data
+    #         return True
 
-    def _strip_padding(self, data):
-        if not data:
-            return data
+    #     return False
 
-        pad = data[-1]
+    # def _strip_padding(self, data):
+    #     if not data:
+    #         return data
 
-        if pad == 0 or pad > len(data):
-            return data
+    #     pad = data[-1]
 
-        if data[-pad:] != bytes([pad]) * pad:
-            return data
+    #     if pad == 0 or pad > len(data):
+    #         return data
 
-        return data[:-pad]
+    #     if data[-pad:] != bytes([pad]) * pad:
+    #         return data
 
-    @staticmethod
-    def _xor_bytes(a, b):
-        return bytes(x ^ y for x, y in zip(a, b))
+    #     return data[:-pad]
+
+    # @staticmethod
+    # def _xor_bytes(a, b):
+    #     return bytes(x ^ y for x, y in zip(a, b))

@@ -49,18 +49,18 @@ class Encode:
         packets = {}
         contains_degree_1 = False
 
-        for _ in range(num_packets):
+        for index in range(num_packets):
             degree = random.randint(1, self._num_blocks)
             if degree == 1:
                 contains_degree_1 = True
-            if not contains_degree_1 and _ == num_packets - 1:
+            if not contains_degree_1 and index == num_packets - 1:
                 degree = 1
 
             indices = random.sample(range(self._num_blocks), degree)
             data = reduce(self._xor_bytes, (self._blocks[i] for i in indices))
             if degree not in packets:
                 packets[degree] = []
-            packets[degree].append(Block(degree, indices, data))
+            packets[degree].append(Block(index, degree, indices, data))
 
         return packets
 

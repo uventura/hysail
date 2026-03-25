@@ -1,4 +1,5 @@
 from hysail.encryption.encode import Encode
+from hysail.encryption.decode import Decode
 from hysail.server.server import Server
 
 import random
@@ -24,13 +25,20 @@ def random_split_packets(packets, num_servers):
 def send_packets_to_servers(packets):
     num_servers = 3
     servers = [Server() for _ in range(num_servers)]
+    local_blocks = {}
+
     split_packets = random_split_packets(packets, num_servers)
     for server, pkts in zip(servers, split_packets):
         for pkt in pkts:
-            pkt.set_server(server)
+            block = pkt.set_server(server)
+
+            if block.degree not in local_blocks:
+                local_blocks[block.degree] = [block]
+            else:
+                local_blocks[block.degree].append(block)
             server.storage_check_block(pkt)
 
-    return servers
+    return servers, local_blocks
 
 
 def main():
@@ -38,12 +46,17 @@ def main():
     block_size = 8
 
     encoded = Encode(data, block_size, 30)
+    local_mac_blocks = encoded.mac_blocks
+    polynomials = encoded.polynomials
+
     packets = encoded.packets
     shuffle_packets(packets)
-    servers = send_packets_to_servers(packets)
+    servers, local_blocks = send_packets_to_servers(packets)
 
-    for pkt in packets:
-        print(pkt.server)
+    Decode(servers, polynomials, local_blocks, local_mac_blocks)
+
+    # for pkt in packets:
+    #     print(pkt.server)
 
     # print(packets)
     # for index, packet in enumerate(encoded.packets):
