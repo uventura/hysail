@@ -1,5 +1,6 @@
 import hysail.utils.galois as ga
 
+
 class Server:
     def __init__(self):
         self._check_blocks = []

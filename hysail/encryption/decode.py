@@ -1,7 +1,23 @@
 class Decode:
     def __init__(self, servers, polynomials, local_blocks, local_mac):
-        print("Starting decode process...")
-        print(local_blocks[1])
+        self._servers = servers
+        self._polynomials = polynomials
+        self._local_blocks = local_blocks
+        self._local_mac = local_mac
+
+    def decode(self):
+        pass
+
+    def _reconstruct_blocks(self):
+        degrees = sorted(self._local_blocks.keys())
+        for degree in degrees:
+            blocks = self._local_blocks[degree]
+            for block in blocks:
+                # print(f"Processing block {block.index} with degree {block.degree}")
+                # print(f"Block indices: {block.indices}")
+                # print(f"Block data: {block.data.hex()}")
+                polynomial = self._polynomials[0]
+                server_answer = block.server.receive_challenge(block.index, polynomial)
         # print(polynomials)
         # print(local_mac)
         # print(servers)

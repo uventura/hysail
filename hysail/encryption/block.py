@@ -2,11 +2,14 @@ from dataclasses import dataclass
 
 from hysail.server.server import Server
 
+
 @dataclass
 class LocalBlock:
     index: int
     degree: int
     indices: list[int]
+    server: Server
+
 
 class Block:
     def __init__(self, index, degree, indices, data):
@@ -19,7 +22,7 @@ class Block:
     def set_server(self, server):
         self.server = server
 
-        return LocalBlock(self.index, self.degree, self.indices)
+        return LocalBlock(self.index, self.degree, self.indices, server)
 
     def copy(self):
         return Block(self.degree, self.indices.copy(), self.data)
