@@ -4,6 +4,7 @@ from functools import reduce
 from hysail.encryption.block import Block
 from hysail.encryption.local_mac import LocalMac
 import hysail.utils.galois as ga
+import hysail.utils.operators as op
 
 POLYNOMIAL_SET_SIZE = 40
 
@@ -57,7 +58,7 @@ class Encode:
                 degree = 1
 
             indices = random.sample(range(self._num_blocks), degree)
-            data = reduce(self._xor_bytes, (self._blocks[i] for i in indices))
+            data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
             if degree not in packets:
                 packets[degree] = []
             packets[degree].append(Block(index, degree, indices, data))
@@ -88,10 +89,6 @@ class Encode:
                 mac_blocks[index].append(mac)
 
         return mac_blocks
-
-    @staticmethod
-    def _xor_bytes(a, b):
-        return bytes(x ^ y for x, y in zip(a, b))
 
     def _polynomial_set_generation(self):
         polynomials = []
