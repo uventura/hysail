@@ -12,27 +12,36 @@ class Decode:
         self._local_mac = local_mac
 
     def decode(self):
-        self._reconstruct_blocks()
+        return self._validate_blocks()
 
-    def _reconstruct_blocks(self):
+    def _validate_blocks(self):
         degrees = sorted(self._local_blocks.keys())
+        is_valid = True
+
         for degree in degrees:
             blocks = self._local_blocks[degree]
             for block in blocks:
                 random_polynomial_index = random.randint(0, len(self._polynomials) - 1)
                 polynomial = self._polynomials[random_polynomial_index]
+
                 answer = block.server.receive_challenge(polynomial, block.index)
-                indices = block.indices
-                macs = [self._local_mac[i][random_polynomial_index] for i in indices]
+                macs = [self._local_mac[i][random_polynomial_index] for i in block.indices]
                 result = macs[0].mac
                 for mac in macs[1:]:
                     result = xor_bytes(result, mac.mac)
+
                 if isinstance(result, bytes):
                     result = np.frombuffer(result, dtype=np.uint8)
+
                 packed_result = np.packbits(result)[0]
                 packed_answer = np.packbits(answer)[0]
-                print(packed_result, packed_answer)
-                print("---")
+                comparison = bool(packed_result == packed_answer)
+                if not comparison:
+                    print("Validation failed for block index:", block.index)
+
+                is_valid = is_valid and comparison
+
+        return is_valid
 
     # def __init__(self, packets, num_blocks, remove_padding=True):
     #     if num_blocks <= 0:
