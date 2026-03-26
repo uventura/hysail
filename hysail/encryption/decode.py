@@ -25,7 +25,9 @@ class Decode:
                 polynomial = self._polynomials[random_polynomial_index]
 
                 answer = block.server.receive_challenge(polynomial, block.index)
-                macs = [self._local_mac[i][random_polynomial_index] for i in block.indices]
+                macs = [
+                    self._local_mac[i][random_polynomial_index] for i in block.indices
+                ]
                 result = macs[0].mac
                 for mac in macs[1:]:
                     result = xor_bytes(result, mac.mac)
