@@ -17,6 +17,7 @@ def gf2_poly_mod(m_coeffs, p_coeffs):
     """
     m = list(m_coeffs)
     p = list(p_coeffs)
+    # print(f"M: {m}; P: {p}")
 
     while p and p[-1] == 0:
         p.pop()

@@ -23,4 +23,6 @@ class Server:
         return None
 
     def _compute_response(self, polynomial, check_block):
-        return ga.gf2_poly_mod(check_block.data, polynomial)
+        coefs = ga.bytes_to_poly_coeffs(check_block.data)
+        # print(f"Input: {check_block.data}; Coeficients: {coefs}")
+        return ga.gf2_poly_mod(coefs, polynomial)

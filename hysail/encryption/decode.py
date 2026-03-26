@@ -1,3 +1,9 @@
+from hysail.utils.operators import xor_bytes
+
+import numpy as np
+import random
+
+
 class Decode:
     def __init__(self, servers, polynomials, local_blocks, local_mac):
         self._servers = servers
@@ -6,21 +12,27 @@ class Decode:
         self._local_mac = local_mac
 
     def decode(self):
-        pass
+        self._reconstruct_blocks()
 
     def _reconstruct_blocks(self):
         degrees = sorted(self._local_blocks.keys())
         for degree in degrees:
             blocks = self._local_blocks[degree]
             for block in blocks:
-                # print(f"Processing block {block.index} with degree {block.degree}")
-                # print(f"Block indices: {block.indices}")
-                # print(f"Block data: {block.data.hex()}")
-                polynomial = self._polynomials[0]
-                server_answer = block.server.receive_challenge(block.index, polynomial)
-        # print(polynomials)
-        # print(local_mac)
-        # print(servers)
+                random_polynomial_index = random.randint(0, len(self._polynomials) - 1)
+                polynomial = self._polynomials[random_polynomial_index]
+                answer = block.server.receive_challenge(polynomial, block.index)
+                indices = block.indices
+                macs = [self._local_mac[i][random_polynomial_index] for i in indices]
+                result = macs[0].mac
+                for mac in macs[1:]:
+                    result = xor_bytes(result, mac.mac)
+                if isinstance(result, bytes):
+                    result = np.frombuffer(result, dtype=np.uint8)
+                packed_result = np.packbits(result)[0]
+                packed_answer = np.packbits(answer)[0]
+                print(packed_result, packed_answer)
+                print("---")
 
     # def __init__(self, packets, num_blocks, remove_padding=True):
     #     if num_blocks <= 0:

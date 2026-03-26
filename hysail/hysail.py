@@ -53,7 +53,7 @@ def main():
     shuffle_packets(packets)
     servers, local_blocks = send_packets_to_servers(packets)
 
-    Decode(servers, polynomials, local_blocks, local_mac_blocks)
+    Decode(servers, polynomials, local_blocks, local_mac_blocks).decode()
 
     # for pkt in packets:
     #     print(pkt.server)
