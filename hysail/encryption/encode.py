@@ -1,5 +1,6 @@
 import random
 from functools import reduce
+import numpy as np
 
 from hysail.encryption.block import Block
 from hysail.encryption.local_mac import LocalMac
@@ -27,7 +28,7 @@ class Encode:
 
         self._num_blocks = len(self._blocks)
 
-        self._packets = self._encode(num_packets)
+        self._packets = self._encode()
 
     @property
     def packets(self):
@@ -46,23 +47,23 @@ class Encode:
     def polynomials(self):
         return self._polynomials
 
-    def _encode(self, num_packets):
+    def _encode(self):
         packets = {}
-        contains_degree_1 = False
+        K = self._num_blocks
+        overhead = 1.1
+        num_to_send = int(K * overhead)
+        probabilities = op.robust_soliton_distribution(K)
 
-        for index in range(num_packets):
-            degree = random.randint(1, self._num_blocks)
-            if degree == 1:
-                contains_degree_1 = True
-            if not contains_degree_1 and index == num_packets - 1:
-                degree = 1
+        for index in range(num_to_send):
+            degree = np.random.choice(range(len(probabilities)), p=probabilities)
+            # Ensure degree is at least 1 (the RSD can sometimes have a tiny p(0))
+            degree = max(1, degree)
+            indices = random.sample(range(K), degree)
 
-            indices = random.sample(range(self._num_blocks), degree)
             data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
             if degree not in packets:
                 packets[degree] = []
             packets[degree].append(Block(index, degree, indices, data))
-
         return packets
 
     def _pad(self, data):
