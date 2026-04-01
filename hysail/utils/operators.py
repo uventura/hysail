@@ -6,7 +6,7 @@ def xor_bytes(a, b):
     return bytes(x ^ y for x, y in zip(a, b))
 
 
-def robust_soliton_distribution(K, c=0.1, delta=0.5):
+def robust_soliton_distribution(K, c=0.2, delta=0.01):
     """
     Creates the probability distribution for picking the degree of each packet.
     """
