@@ -29,9 +29,13 @@ class Decode:
             blocks = self._local_blocks[degree]
             print(f"Degree: {degree}, Blocks: {len(blocks)}")
             for block in blocks:
-                print(block.indices)
-                # retrieved_blocks.append(block)
+                if degree == 1 and block not in retrieved_blocks:
+                    retrieved_blocks.append(block)
+                    continue
+                print(f"Retrieving block index: {block}")
             print("----")
+
+        print(retrieved_blocks)
         return retrieved_blocks
 
     def _validate_blocks(self):
