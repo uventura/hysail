@@ -42,7 +42,7 @@ def send_packets_to_servers(packets):
 
 
 def main():
-    data = b"Hello fountain codes!"
+    data = b"Hello fountain codes, this is a weird message that I'm trying to make it work!"
     block_size = 8
 
     encoded = Encode(data, block_size, 30)

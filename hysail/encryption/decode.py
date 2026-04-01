@@ -12,7 +12,27 @@ class Decode:
         self._local_mac = local_mac
 
     def decode(self):
-        return self._validate_blocks()
+        if not self._validate_blocks():
+            raise ValueError("Validation failed")
+
+        self._retrieve_blocks()
+        return True
+
+    def _retrieve_blocks(self):
+        retrieved_blocks = []
+        num_blocks_to_retrieve = len(self._local_blocks.values())
+
+        for degree in sorted(self._local_blocks.keys()):
+            if len(retrieved_blocks) >= num_blocks_to_retrieve:
+                break
+
+            blocks = self._local_blocks[degree]
+            print(f"Degree: {degree}, Blocks: {len(blocks)}")
+            for block in blocks:
+                print(block.indices)
+                # retrieved_blocks.append(block)
+            print("----")
+        return retrieved_blocks
 
     def _validate_blocks(self):
         degrees = sorted(self._local_blocks.keys())
