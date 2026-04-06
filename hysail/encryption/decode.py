@@ -30,6 +30,7 @@ class Decode:
             print(f"Degree: {degree}, Blocks: {len(blocks)}")
             for block in blocks:
                 if degree == 1 and block not in retrieved_blocks:
+                    print(f"Retrieving block index: {block}")
                     retrieved_blocks.append(block)
                     continue
                 print(f"Retrieving block index: {block}")
