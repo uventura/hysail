@@ -8,6 +8,13 @@ class Server:
     def storage_check_block(self, check_block):
         self._check_blocks.append(check_block)
 
+    def download_block(self, block_index):
+        check_block = self._find_check_block(block_index)
+        if check_block is None:
+            raise ValueError("Check block not found")
+
+        return check_block.data
+
     def receive_challenge(self, polynomial, check_block_index):
         check_block = self._find_check_block(check_block_index)
         if check_block is None:

@@ -19,25 +19,30 @@ class Decode:
         return True
 
     def _retrieve_blocks(self):
-        retrieved_blocks = []
+        retrieved_indices = set()
+        retrieved_data = []
         num_blocks_to_retrieve = len(self._local_blocks.values())
 
+        # blocks = self._local_blocks.copy()
+        # while len(retrieved_indices) < num_blocks_to_retrieve:
         for degree in sorted(self._local_blocks.keys()):
-            if len(retrieved_blocks) >= num_blocks_to_retrieve:
+            if len(retrieved_indices) >= num_blocks_to_retrieve:
                 break
 
             blocks = self._local_blocks[degree]
-            print(f"Degree: {degree}, Blocks: {len(blocks)}")
             for block in blocks:
-                if degree == 1 and block not in retrieved_blocks:
-                    print(f"Retrieving block index: {block}")
-                    retrieved_blocks.append(block)
+                block_is_retrievable = self._challenge_server(block.server, block)
+                indices = set(block.indices)
+                if degree == 1 and not indices.issubset(retrieved_indices):
+                    if block_is_retrievable:
+                        retrieved_data.append(block.server.download_block(block.index))
+                        retrieved_indices.update(indices)
                     continue
-                print(f"Retrieving block index: {block}")
             print("----")
 
-        print(retrieved_blocks)
-        return retrieved_blocks
+        print(retrieved_indices)
+        print(retrieved_data)
+        return retrieved_indices
 
     def _validate_blocks(self):
         degrees = sorted(self._local_blocks.keys())
@@ -46,29 +51,33 @@ class Decode:
         for degree in degrees:
             blocks = self._local_blocks[degree]
             for block in blocks:
-                random_polynomial_index = random.randint(0, len(self._polynomials) - 1)
-                polynomial = self._polynomials[random_polynomial_index]
-
-                answer = block.server.receive_challenge(polynomial, block.index)
-                macs = [
-                    self._local_mac[i][random_polynomial_index] for i in block.indices
-                ]
-                result = macs[0].mac
-                for mac in macs[1:]:
-                    result = xor_bytes(result, mac.mac)
-
-                if isinstance(result, bytes):
-                    result = np.frombuffer(result, dtype=np.uint8)
-
-                packed_result = np.packbits(result)[0]
-                packed_answer = np.packbits(answer)[0]
-                comparison = bool(packed_result == packed_answer)
-                if not comparison:
-                    print("Validation failed for block index:", block.index)
-
+                comparison = self._challenge_server(block.server, block)
                 is_valid = is_valid and comparison
 
         return is_valid
+
+    def _challenge_server(self, server, block):
+        random_polynomial_index = random.randint(0, len(self._polynomials) - 1)
+        polynomial = self._polynomials[random_polynomial_index]
+
+        answer = server.receive_challenge(polynomial, block.index)
+        macs = [
+            self._local_mac[i][random_polynomial_index] for i in block.indices
+        ]
+        result = macs[0].mac
+        for mac in macs[1:]:
+            result = xor_bytes(result, mac.mac)
+
+        if isinstance(result, bytes):
+            result = np.frombuffer(result, dtype=np.uint8)
+
+        packed_result = np.packbits(result)[0]
+        packed_answer = np.packbits(answer)[0]
+        comparison = bool(packed_result == packed_answer)
+        if not comparison:
+            print("Validation failed for block index:", block.index)
+
+        return comparison
 
     # def __init__(self, packets, num_blocks, remove_padding=True):
     #     if num_blocks <= 0:
