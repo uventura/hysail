@@ -54,9 +54,7 @@ class Decode:
             degree += 1
             if degree > max(blocks.keys()):
                 degree = 1
-            it -= 1
-            if it == 0:
-                break
+            print(f"Degree: {degree}")
 
         # for degree in sorted(self._local_blocks.keys()):
         #     if len(retrieved_indices) >= num_blocks_to_retrieve:
@@ -74,6 +72,7 @@ class Decode:
         #     print("----")
 
         print(retrieved_data)
+        print(list(retrieved_data.keys()))
         return retrieved_data
 
     def _validate_blocks(self):
