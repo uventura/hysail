@@ -29,6 +29,3 @@ class Block:
         self.server = server
 
         return LocalBlock(self.index, self.degree, self.indices, server)
-
-    def copy(self):
-        return Block(self.degree, self.indices.copy(), self.data)

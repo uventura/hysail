@@ -50,7 +50,7 @@ class Encode:
     def _encode(self):
         packets = {}
         K = self._num_blocks
-        overhead = 1.5
+        overhead = 6
         num_to_send = int(K * overhead)
         probabilities = op.robust_soliton_distribution(K)
 
