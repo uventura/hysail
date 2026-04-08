@@ -21,17 +21,22 @@ class Decode:
 
     def _retrieve_blocks(self):
         retrieved_data = {}
-        num_blocks_to_retrieve = len(self._local_blocks.values())
+        print(self._local_blocks)
+        num_blocks_to_retrieve = self._find_num_blocks_to_retrieve()
 
         blocks = self._local_blocks.copy()
         print("LOCAL BLOCKS")
         for block in blocks:
-            print(f"[{block}]: {blocks[block]}")
+            print(f"[{block}]:")
+            for e in blocks[block]:
+                print(f"  {e}")
             print("*" * 10)
         print("=" * 20)
         degree = 1
         it = 80
+        print(f"Num blocks to retrieve: {num_blocks_to_retrieve}")
         while len(retrieved_data.keys()) < num_blocks_to_retrieve:
+            print(f"Degree: {degree}")
             print(retrieved_data)
 
             for index, block in enumerate(blocks.get(degree, [])):
@@ -44,17 +49,18 @@ class Decode:
                 else:
                     print(block)
                     partial_block = self._solve_partial_block(block, retrieved_data)
+                    partial_block.degree = int(solvable_parts)
                     print(f"Partial block data: {partial_block}")
                     blocks[int(solvable_parts)].append(partial_block)
 
                     if solvable_parts == 1:
                         retrieved_data[block.indices[0]] = partial_block
                     blocks[degree].pop(index)
-                    print()
+                    print("\n")
             degree += 1
             if degree > max(blocks.keys()):
                 degree = 1
-            print(f"Degree: {degree}")
+            print("#" * 40)
 
         # for degree in sorted(self._local_blocks.keys()):
         #     if len(retrieved_indices) >= num_blocks_to_retrieve:
@@ -74,6 +80,15 @@ class Decode:
         print(retrieved_data)
         print(list(retrieved_data.keys()))
         return retrieved_data
+
+    def _find_num_blocks_to_retrieve(self):
+        num_blocks_to_retrieve = 0
+        for block in self._local_blocks:
+            for e in self._local_blocks[block]:
+                max_index = max(e.indices)
+                if max_index + 1 > num_blocks_to_retrieve:
+                    num_blocks_to_retrieve = max_index + 1
+        return num_blocks_to_retrieve
 
     def _validate_blocks(self):
         degrees = sorted(self._local_blocks.keys())
