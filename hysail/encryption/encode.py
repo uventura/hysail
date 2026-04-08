@@ -63,7 +63,7 @@ class Encode:
             data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
             if degree not in packets:
                 packets[degree] = []
-            packets[degree].append(Block(index, degree, indices, data))
+            packets[degree].append(Block(index, int(degree), indices, data))
         return packets
 
     def _pad(self, data):

@@ -19,6 +19,12 @@ class Block:
         self.data = data
         self.server = None
 
+    def __str__(self):
+        return f"Block(index={self.index}, degree={self.degree}, indices={self.indices}, data={self.data}, server={self.server})"
+
+    def __repr__(self):
+        return f"Block(index={self.index}, degree={self.degree}, indices={self.indices}, data={self.data}, server={self.server})"
+
     def set_server(self, server):
         self.server = server
 

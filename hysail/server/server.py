@@ -24,9 +24,13 @@ class Server:
         return response
 
     def _find_check_block(self, check_block_index):
+        # print("----------------")
+        # print(self._check_blocks)
+        # print(f"Looking for check block with index {check_block_index}")
         for check_block in self._check_blocks:
             if check_block_index == check_block.index:
                 return check_block
+        # print("----------------")
         return None
 
     def _compute_response(self, polynomial, check_block):

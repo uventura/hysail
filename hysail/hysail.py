@@ -17,7 +17,7 @@ def random_split_packets(packets, num_servers):
     split_packets = [[] for _ in range(num_servers)]
     for pkt in packets:
         server_idx = random.randint(0, num_servers - 1)
-        split_packets[server_idx].append(pkt)
+        split_packets[int(server_idx)].append(pkt)
 
     return split_packets
 
@@ -33,9 +33,9 @@ def send_packets_to_servers(packets):
             block = pkt.set_server(server)
 
             if block.degree not in local_blocks:
-                local_blocks[block.degree] = [block]
+                local_blocks[int(block.degree)] = [block]
             else:
-                local_blocks[block.degree].append(block)
+                local_blocks[int(block.degree)].append(block)
             server.storage_check_block(pkt)
 
     return servers, local_blocks

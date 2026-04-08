@@ -1,4 +1,5 @@
 from hysail.utils.operators import xor_bytes
+from hysail.encryption.block import Block
 
 import numpy as np
 import random
@@ -19,30 +20,61 @@ class Decode:
         return True
 
     def _retrieve_blocks(self):
-        retrieved_indices = set()
-        retrieved_data = []
+        retrieved_data = {}
         num_blocks_to_retrieve = len(self._local_blocks.values())
 
-        # blocks = self._local_blocks.copy()
-        # while len(retrieved_indices) < num_blocks_to_retrieve:
-        for degree in sorted(self._local_blocks.keys()):
-            if len(retrieved_indices) >= num_blocks_to_retrieve:
+        blocks = self._local_blocks.copy()
+        print("LOCAL BLOCKS")
+        for block in blocks:
+            print(f"[{block}]: {blocks[block]}")
+            print("*" * 10)
+        print("=" * 20)
+        degree = 1
+        it = 80
+        while len(retrieved_data.keys()) < num_blocks_to_retrieve:
+            print(retrieved_data)
+
+            for index, block in enumerate(blocks.get(degree, [])):
+                solvable_parts = self._count_solvable_parts(
+                    block, set(retrieved_data.keys())
+                )
+                print(f"Solvable parts for block {block}: {solvable_parts}")
+                if solvable_parts == 0:
+                    blocks[degree].pop(index)
+                else:
+                    print(block)
+                    partial_block = self._solve_partial_block(block, retrieved_data)
+                    print(f"Partial block data: {partial_block}")
+                    blocks[int(solvable_parts)].append(partial_block)
+
+                    if solvable_parts == 1:
+                        retrieved_data[block.indices[0]] = partial_block
+                    blocks[degree].pop(index)
+                    print()
+            degree += 1
+            if degree > max(blocks.keys()):
+                degree = 1
+            it -= 1
+            if it == 0:
                 break
 
-            blocks = self._local_blocks[degree]
-            for block in blocks:
-                block_is_retrievable = self._challenge_server(block.server, block)
-                indices = set(block.indices)
-                if degree == 1 and not indices.issubset(retrieved_indices):
-                    if block_is_retrievable:
-                        retrieved_data.append(block.server.download_block(block.index))
-                        retrieved_indices.update(indices)
-                    continue
-            print("----")
+        # for degree in sorted(self._local_blocks.keys()):
+        #     if len(retrieved_indices) >= num_blocks_to_retrieve:
+        #         break
 
-        print(retrieved_indices)
+        #     blocks = self._local_blocks[degree]
+        #     for block in blocks:
+        #         block_is_retrievable = self._challenge_server(block.server, block)
+        #         indices = set(block.indices)
+        #         if degree == 1 and not indices.issubset(retrieved_indices):
+        #             if block_is_retrievable:
+        #                 retrieved_data.append(block.server.download_block(block.index))
+        #                 retrieved_indices.update(indices)
+        #             continue
+        #     print("----")
+
         print(retrieved_data)
-        return retrieved_indices
+        return retrieved_data
 
     def _validate_blocks(self):
         degrees = sorted(self._local_blocks.keys())
@@ -61,9 +93,7 @@ class Decode:
         polynomial = self._polynomials[random_polynomial_index]
 
         answer = server.receive_challenge(polynomial, block.index)
-        macs = [
-            self._local_mac[i][random_polynomial_index] for i in block.indices
-        ]
+        macs = [self._local_mac[i][random_polynomial_index] for i in block.indices]
         result = macs[0].mac
         for mac in macs[1:]:
             result = xor_bytes(result, mac.mac)
@@ -78,6 +108,32 @@ class Decode:
             print("Validation failed for block index:", block.index)
 
         return comparison
+
+    def _count_solvable_parts(self, block, retrieved_indices):
+        print(f"block: {block}, retrieved_indices: {retrieved_indices}")
+        return len(block.indices) - len(set(block.indices) & retrieved_indices)
+
+    def _solve_partial_block(self, block, retrieved_data):
+        print(block)
+        # print(f"Current block: {block}, retrieved_data keys: {retrieved_data.keys()}")
+        # print(f"Indices: {indices}")
+        if not isinstance(block, Block):
+            data = block.server.download_block(block.index)
+        else:
+            data = block.data
+
+        indices = set(block.indices)
+        if len(indices) == 1 and not indices.issubset(retrieved_data):
+            # p = indices.pop()
+            # print(p)
+            # print(block.index)
+            return Block(block.index, block.degree, block.indices, data)
+
+        for index in block.indices:
+            if index in retrieved_data:
+                data = xor_bytes(data, retrieved_data[index].data)
+                block.indices.remove(index)
+        return Block(block.index, block.degree, block.indices, data)
 
     # def __init__(self, packets, num_blocks, remove_padding=True):
     #     if num_blocks <= 0:
