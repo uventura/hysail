@@ -1,0 +1,1 @@
+.\hysail_env\Scripts\Activate.ps1

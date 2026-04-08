@@ -50,7 +50,7 @@ class Encode:
     def _encode(self):
         packets = {}
         K = self._num_blocks
-        overhead = 1.5
+        overhead = 6
         num_to_send = int(K * overhead)
         probabilities = op.robust_soliton_distribution(K)
 
@@ -63,7 +63,7 @@ class Encode:
             data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
             if degree not in packets:
                 packets[degree] = []
-            packets[degree].append(Block(index, degree, indices, data))
+            packets[degree].append(Block(index, int(degree), indices, data))
         return packets
 
     def _pad(self, data):
