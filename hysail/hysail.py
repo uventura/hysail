@@ -2,6 +2,8 @@ from hysail.encryption.encode import Encode
 from hysail.encryption.decode import Decode
 from hysail.server.server import Server
 
+from hysail.logger.logger import execution_logger
+
 import random
 
 
@@ -42,6 +44,8 @@ def send_packets_to_servers(packets):
 
 
 def main():
+    execution_logger.clear_logs()
+
     data = b"Hello fountain codes, this is a weird message that I'm trying to make it work!"
     block_size = 8
 

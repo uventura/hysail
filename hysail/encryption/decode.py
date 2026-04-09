@@ -1,6 +1,6 @@
 from hysail.utils.operators import xor_bytes
 from hysail.encryption.block import Block
-from hysail.logger.logger import ExecutionLogger
+from hysail.logger.logger import execution_logger
 
 import numpy as np
 import random
@@ -22,53 +22,48 @@ class Decode:
 
     def _retrieve_blocks(self):
         retrieved_data = {}
-        ExecutionLogger.info(self._local_blocks)
         num_blocks_to_retrieve = self._find_num_blocks_to_retrieve()
 
         blocks = self._local_blocks.copy()
-        ExecutionLogger.info("LOCAL BLOCKS")
-        for block in blocks:
-            ExecutionLogger.info(f"[{block}]:")
-            for e in blocks[block]:
-                ExecutionLogger.info(f"  {e}")
-            ExecutionLogger.info("*" * 10)
-        ExecutionLogger.info("=" * 20)
+        self._log_all_local_blocks(blocks)
 
         degree = 1
-        ExecutionLogger.info(f"Num blocks to retrieve: {num_blocks_to_retrieve}")
+        execution_logger.debug(
+            f"Number of blocks to retrieve: {num_blocks_to_retrieve}"
+        )
         while len(retrieved_data.keys()) < num_blocks_to_retrieve:
-            ExecutionLogger.info(f"Degree: {degree}, solved: {retrieved_data.keys()}")
-            ExecutionLogger.info(retrieved_data)
+            execution_logger.debug(
+                f"Degree: {degree}, solved: {retrieved_data.keys()}\n"
+            )
 
-            for index, block in enumerate(blocks.get(degree, [])):
+            for _, block in enumerate(blocks.get(degree, [])):
                 solvable_parts = int(
                     self._count_solvable_parts(block, set(retrieved_data.keys()))
                 )
-                ExecutionLogger.info(
-                    f"Solvable parts for block {block}: {solvable_parts}"
-                )
+                execution_logger.debug(f"Solvable parts: {solvable_parts}")
+                execution_logger.debug(f"Block: {block}")
                 if solvable_parts == 0:
-                    blocks[degree].pop(index)
-                else:
-                    ExecutionLogger.info(block)
-                    partial_block = self._solve_partial_block(block, retrieved_data)
-                    partial_block.degree = solvable_parts
-                    ExecutionLogger.info(f"Partial block data: {partial_block}")
-                    if solvable_parts in blocks:
-                        blocks[solvable_parts].append(partial_block)
-                    else:
-                        blocks[solvable_parts] = [partial_block]
+                    execution_logger.debug("Block is already solved, skipping.\n")
+                    continue
 
-                    if solvable_parts == 1:
-                        retrieved_data[block.indices[0]] = partial_block
-                    blocks[degree].pop(index)
-                    ExecutionLogger.info("\n")
+                partial_block = self._solve_partial_block(block, retrieved_data)
+                partial_block.degree = solvable_parts
+                execution_logger.debug(f"Partial block data: {partial_block}\n")
+
+                if solvable_parts in blocks:
+                    blocks[solvable_parts].append(partial_block)
+                else:
+                    blocks[solvable_parts] = [partial_block]
+
+                if solvable_parts == 1:
+                    retrieved_data[block.indices[0]] = partial_block
+                    execution_logger.info(f"Retrieved block index: {block.indices[0]}")
             degree += 1
             if degree > max(blocks.keys()):
                 degree = 1
-            ExecutionLogger.info("#" * 40)
+            execution_logger.debug("-" * 40)
 
-        ExecutionLogger.info(retrieved_data)
+        execution_logger.debug(retrieved_data)
         return retrieved_data
 
     def _find_num_blocks_to_retrieve(self):
@@ -81,7 +76,6 @@ class Decode:
         return num_blocks_to_retrieve
 
     def _count_solvable_parts(self, block, retrieved_indices):
-        ExecutionLogger.info(f"block: {block}, retrieved_indices: {retrieved_indices}")
         return len(block.indices) - len(set(block.indices) & retrieved_indices)
 
     def _solve_partial_block(self, block, retrieved_data):
@@ -118,6 +112,18 @@ class Decode:
         packed_answer = np.packbits(answer)[0]
         comparison = bool(packed_result == packed_answer)
         if not comparison:
-            ExecutionLogger.info("Validation failed for block index:", block.index)
+            execution_logger.error(f"Validation failed for block index: {block.index}")
 
         return comparison
+
+    def _log_all_local_blocks(self, blocks):
+        execution_logger.debug("-" * 20)
+        execution_logger.debug(" " * 4 + "LOCAL BLOCKS")
+        execution_logger.debug("-" * 20)
+
+        for block in blocks:
+            execution_logger.debug(f"[{block}]:")
+            for e in blocks[block]:
+                execution_logger.debug(f"  {e}")
+            execution_logger.debug("-" * 10)
+        execution_logger.debug("_" * 20)

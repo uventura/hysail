@@ -4,7 +4,7 @@ import logging
 
 _EXECUTION_LOG_NAME = "hysail_execution"
 _EXECUTION_LOG_FILE = "logs/execution.log"
-_EXECUTION_LOG_LEVEL = logging.DEBUG
+_EXECUTION_LOG_LEVEL = [logging.INFO, logging.DEBUG]
 
 
 class ExecutionLogger(BasicLogger):

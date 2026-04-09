@@ -1,3 +1,3 @@
-from hysail.logger.execution_logger import ExecutionLogger as _ExecutionLogger
+from hysail.logger.execution_logger import ExecutionLogger as ExecutionLogger
 
-ExecutionLogger = _ExecutionLogger()
+execution_logger = ExecutionLogger()
