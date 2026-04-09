@@ -9,15 +9,10 @@ class BasicLogger:
     Saves logs to a file with a non-verbose format.
     """
 
-    def __init__(self, name: str = "hysail", log_file: str = None, level: int = logging.INFO):
-        """
-        Initialize the logger with file handler.
-
-        Args:
-            name: Logger name (default: "hysail")
-            log_file: Path to log file (default: logs/hysail.log)
-            level: Logging level (default: INFO)
-        """
+    def __init__(
+        self, name: str = "hysail", log_file: str = None, level: int = logging.INFO
+    ):
+        print(logging.INFO)
         self.logger = logging.getLogger(name)
         self.logger.setLevel(level)
 
@@ -26,15 +21,6 @@ class BasicLogger:
         self._setup_file_handler(log_file, level)
 
     def _prepare_log_file(self, log_file: str = None) -> str:
-        """
-        Prepare the log file path, creating directory if needed.
-
-        Args:
-            log_file: Path to log file or None to use default
-
-        Returns:
-            The log file path
-        """
         if log_file is None:
             log_dir = "logs"
             if not os.path.exists(log_dir):
@@ -43,17 +29,12 @@ class BasicLogger:
         return log_file
 
     def _setup_file_handler(self, log_file: str, level: int) -> None:
-        """
-        Configure file handler with formatter and add to logger.
-
-        Args:
-            log_file: Path to log file
-            level: Logging level
-        """
         file_handler = logging.FileHandler(log_file)
         file_handler.setLevel(level)
 
-        formatter = logging.Formatter("%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S")
+        formatter = logging.Formatter(
+            "%(asctime)s | %(levelname)-8s | %(message)s", datefmt="%Y-%m-%d %H:%M:%S"
+        )
         file_handler.setFormatter(formatter)
 
         self.logger.addHandler(file_handler)
