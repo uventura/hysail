@@ -12,12 +12,9 @@ POLYNOMIAL_SET_SIZE = 40
 
 # It uses LtCode
 class Encode:
-    def __init__(self, data, block_size, num_packets=1):
+    def __init__(self, data, block_size):
         if not data:
             raise ValueError("Data cannot be empty")
-
-        if num_packets <= 0:
-            raise ValueError("num_packets must be > 0")
 
         self._block_size = block_size
         self._data = self._pad(data)

@@ -166,3 +166,6 @@ private
 __pycache__/
 
 *.log
+*.ruff*
+logs/
+output/
