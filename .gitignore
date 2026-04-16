@@ -168,3 +168,4 @@ __pycache__/
 *.log
 *.ruff*
 logs/
+output/

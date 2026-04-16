@@ -1,73 +1,44 @@
 from hysail.encryption.encode import Encode
-from hysail.encryption.decode import Decode
-from hysail.server.server import Server
-
-from hysail.logger.logger import execution_logger
-
-import random
+import click
+import os
+import pickle
+from pathlib import Path
 
 
-def shuffle_packets(packets):
-    random.shuffle(packets)
-    return packets
+def encode(input_file: str, output: str, block_size: int = 8) -> int:
+    input_path = Path(input_file)
+    with open(input_path, "rb") as file:
+        data = file.read()
 
-
-def random_split_packets(packets, num_servers):
-    if num_servers <= 0:
-        raise ValueError("num_servers must be > 0")
-
-    split_packets = [[] for _ in range(num_servers)]
-    for pkt in packets:
-        server_idx = random.randint(0, num_servers - 1)
-        split_packets[int(server_idx)].append(pkt)
-
-    return split_packets
-
-
-def send_packets_to_servers(packets):
-    num_servers = 3
-    servers = [Server() for _ in range(num_servers)]
-    local_blocks = {}
-
-    split_packets = random_split_packets(packets, num_servers)
-    for server, pkts in zip(servers, split_packets):
-        for pkt in pkts:
-            block = pkt.set_server(server)
-
-            if block.degree not in local_blocks:
-                local_blocks[int(block.degree)] = [block]
-            else:
-                local_blocks[int(block.degree)].append(block)
-            server.storage_check_block(pkt)
-
-    return servers, local_blocks
-
-
-def main():
-    execution_logger.clear_logs()
-
-    data = b"Hello fountain codes, this is a weird message that I'm trying to make it work!"
-    block_size = 8
-
-    encoded = Encode(data, block_size, 30)
-    local_mac_blocks = encoded.mac_blocks
-    polynomials = encoded.polynomials
-
+    encoded = Encode(data, block_size)
     packets = encoded.packets
-    shuffle_packets(packets)
-    servers, local_blocks = send_packets_to_servers(packets)
 
-    decoded = Decode(servers, polynomials, local_blocks, local_mac_blocks).decode()
-    print(decoded)
+    os.makedirs(output, exist_ok=True)
+    for i, packet in enumerate(packets):
+        output_file = os.path.join(output, f"{input_path.name}_packet_{i}.pkl")
+        with open(output_file, "wb") as f:
+            pickle.dump(packet, f)
 
-    # for pkt in packets:
-    #     print(pkt.server)
+    return len(packets)
 
-    # print(packets)
-    # for index, packet in enumerate(encoded.packets):
-    #     print(index, packet)
 
-    # print(encoded.mac_blocks)
+@click.command()
+@click.option(
+    "--encode", "input_file", type=click.Path(exists=True), help="File to encode"
+)
+@click.option("--block-size", default=8, help="Block size for encoding")
+@click.option(
+    "--output",
+    type=click.Path(file_okay=False, dir_okay=True),
+    required=True,
+    help="Directory where generated packets will be placed",
+)
+def main(input_file, block_size, output):
+    if input_file:
+        packet_count = encode(input_file, output, block_size)
+        click.echo(f"Encoded {packet_count} packets saved to {output}")
+    else:
+        click.echo("Use --encode to specify a file to encode.")
 
 
 if __name__ == "__main__":
