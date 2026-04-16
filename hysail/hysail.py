@@ -15,7 +15,7 @@ def encode(input_file: str, output: str, block_size: int = 8) -> int:
 
     os.makedirs(output, exist_ok=True)
     for i, packet in enumerate(packets):
-        output_file = os.path.join(output, f"{input_path.name}_packet_{i}.pkl")
+        output_file = os.path.join(output, f"{input_path.name}_packet_{packet.index}.pkl")
         with open(output_file, "wb") as f:
             pickle.dump(packet, f)
 

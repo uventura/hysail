@@ -1,39 +1,43 @@
+import glob
+import os
+import shutil
+
 import hysail.utils.galois as ga
 
 
 class Server:
-    def __init__(self):
-        self._check_blocks = []
+    def __init__(self, dir_storage: str):
+        self._dir_storage = dir_storage
+        os.makedirs(self._dir_storage, exist_ok=True)
 
     def storage_check_block(self, check_block):
-        self._check_blocks.append(check_block)
+        source_path = os.fspath(check_block)
+        destination_path = os.path.join(self._dir_storage, os.path.basename(source_path))
+        shutil.copyfile(source_path, destination_path)
 
     def download_block(self, block_index):
-        check_block = self._find_check_block(block_index)
-        if check_block is None:
+        block_path = self._find_check_block(block_index)
+        if block_path is None:
             raise ValueError("Check block not found")
 
-        return check_block.data
+        with open(block_path, "rb") as file:
+            return file.read()
 
     def receive_challenge(self, polynomial, check_block_index):
-        check_block = self._find_check_block(check_block_index)
-        if check_block is None:
+        block_path = self._find_check_block(check_block_index)
+        if block_path is None:
             raise ValueError("Check block not found")
 
-        response = self._compute_response(polynomial, check_block)
+        response = self._compute_response(polynomial, block_path)
         return response
 
     def _find_check_block(self, check_block_index):
-        # print("----------------")
-        # print(self._check_blocks)
-        # print(f"Looking for check block with index {check_block_index}")
-        for check_block in self._check_blocks:
-            if check_block_index == check_block.index:
-                return check_block
-        # print("----------------")
-        return None
+        pattern = os.path.join(self._dir_storage, f"*_packet_{check_block_index}.pkl")
+        matches = glob.glob(pattern)
+        return matches[0] if matches else None
 
-    def _compute_response(self, polynomial, check_block):
-        coefs = ga.bytes_to_poly_coeffs(check_block.data)
-        # print(f"Input: {check_block.data}; Coeficients: {coefs}")
+    def _compute_response(self, polynomial, block_path):
+        with open(block_path, "rb") as file:
+            data = file.read()
+        coefs = ga.bytes_to_poly_coeffs(data)
         return ga.gf2_poly_mod(coefs, polynomial)
