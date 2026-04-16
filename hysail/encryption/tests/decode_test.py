@@ -1,136 +1,92 @@
-import pytest
-
+from hysail.encryption.block import Block, LocalBlock
 from hysail.encryption.decode import Decode
-from hysail.encryption.encode import Encode
-from hysail.encryption.block import Block
+from hysail.utils.operators import xor_bytes
 
 
-def generate_packets(data, block_size, num_packets=30):
-    enc = Encode(data, block_size, num_packets=num_packets)
-    return enc.packets, enc.num_blocks
+class DummyServer:
+    def __init__(self, data: bytes):
+        self.data = data
+        self.download_called = False
+
+    def download_block(self, block_index):
+        self.download_called = True
+        return self.data
 
 
-def test_when_enough_packets_then_full_decode_succeeds():
-    data = b"ABCDEFGH"
-    block_size = 2
+def test_when_finding_num_blocks_to_retrieve_then_returns_max_block_index():
+    local_blocks = {
+        1: [Block(1, 1, [1], b"A")],
+        2: [Block(2, 2, [1, 2], b"\x03")],
+    }
 
-    packets, num_blocks = generate_packets(data, block_size, num_packets=50)
-    dec = Decode(packets, num_blocks)
+    decoder = Decode(servers=[], polynomials=[], local_blocks=local_blocks, local_mac=[])
 
-    assert dec.is_decoded
-    assert dec.data == data
-
-
-def test_when_too_few_packets_then_decode_fails():
-    data = b"ABCDEFGH"
-    block_size = 2
-
-    packets, num_blocks = generate_packets(data, block_size, num_packets=2)
-    dec = Decode(packets, num_blocks)
-
-    assert not dec.is_decoded
-    with pytest.raises(ValueError):
-        _ = dec.data
+    assert decoder._find_num_blocks_to_retrieve() == 2
 
 
-def test_when_decoded_then_blocks_match_expected():
-    data = b"ABCDEFGH"
-    block_size = 2
+def test_when_counting_solvable_parts_then_returns_remaining_indices():
+    block = Block(2, 2, [1, 2], b"\x03")
+    decoder = Decode(servers=[], polynomials=[], local_blocks={}, local_mac=[])
 
-    packets, num_blocks = generate_packets(data, block_size, num_packets=50)
-    dec = Decode(packets, num_blocks)
-    assert len(dec.blocks) == num_blocks
-
-    if dec.is_decoded:
-        for b in dec.blocks:
-            assert isinstance(b, bytes)
+    assert decoder._count_solvable_parts(block, set()) == 2
+    assert decoder._count_solvable_parts(block, {1}) == 1
+    assert decoder._count_solvable_parts(block, {1, 2}) == 0
 
 
-def test_when_known_block_present_then_reduce_packet_simplifies():
-    dec = Decode([], num_blocks=2)
-    dec._blocks[0] = b"A"
+def test_when_solving_partial_block_then_reduces_packet_with_retrieved_block():
+    original = Block(2, 2, [1, 2], xor_bytes(b"A", b"B"))
+    retrieved_data = {1: Block(1, 1, [1], b"A")}
+    decoder = Decode(servers=[], polynomials=[], local_blocks={}, local_mac=[])
 
-    pkt = (
-        type(dec._packets).__args__[0]
-        if hasattr(type(dec._packets), "__args__")
-        else None
+    partial = decoder._solve_partial_block(original, retrieved_data)
+
+    assert partial.indices == [2]
+    assert partial.data == b"B"
+    assert partial.index == 2
+
+
+def test_when_solving_partial_block_then_downloads_server_block_for_non_block_entry():
+    import numpy as np
+    import hysail.utils.galois as ga
+
+    server = DummyServer(b"C")
+    local_block = LocalBlock(index=3, degree=1, indices=[1], server=server)
+
+    polynomial = np.array([1, 1], dtype=np.uint8)
+    answer = ga.gf2_poly_mod(ga.bytes_to_poly_coeffs(b"C"), polynomial)
+
+    def receive_challenge(polynomial_arg, check_block_index):
+        assert check_block_index == 3
+        assert np.array_equal(polynomial_arg, polynomial)
+        return answer
+
+    server.receive_challenge = receive_challenge
+
+    from hysail.encryption.local_mac import LocalMac
+
+    mac = ga.gf2_poly_mod(ga.bytes_to_poly_coeffs(b"C"), polynomial)
+    local_mac = [[], [LocalMac(mac=mac, polynomial_index=0, block_index=1)]]
+
+    decoder = Decode(
+        servers=[],
+        polynomials=[polynomial],
+        local_blocks={},
+        local_mac=local_mac,
     )
 
-    # reuse encoder to get a valid Block
-    enc = Encode(b"AB", block_size=1, num_packets=1)
-    pkt = enc.packets[0].copy()
+    partial = decoder._solve_partial_block(local_block, {})
 
-    pkt.indices = [0, 1]
-    pkt.degree = 2
-    pkt.data = bytes([ord("A") ^ ord("B")])
-
-    dec._reduce_packet(pkt)
-
-    assert pkt.degree == 1
-    assert pkt.indices == [1]
-    assert pkt.data == b"B"
+    assert server.download_called is True
+    assert isinstance(partial, Block)
+    assert partial.data == b"C"
+    assert partial.indices == [1]
 
 
-def test_when_degree_one_packet_then_try_resolve_stores_block():
-    dec = Decode([], num_blocks=2)
+def test_when_decoding_then_retrieves_blocks_in_index_order():
+    local_blocks = {
+        1: [Block(1, 1, [1], b"A")],
+        2: [Block(2, 2, [1, 2], xor_bytes(b"A", b"B"))],
+    }
+    decoder = Decode(servers=[], polynomials=[], local_blocks=local_blocks, local_mac=[])
 
-    enc = Encode(b"A", block_size=1, num_packets=1)
-    pkt = enc.packets[0].copy()
-
-    pkt.indices = [0]
-    pkt.degree = 1
-    pkt.data = b"Z"
-
-    resolved = dec._try_resolve(pkt)
-
-    assert resolved
-    assert dec.blocks[0] == b"Z"
-
-
-def test_when_padding_present_then_data_is_stripped_correctly():
-    data = b"ABC"
-    block_size = 2
-
-    packets, num_blocks = generate_packets(data, block_size, num_packets=50)
-
-    dec = Decode(packets, num_blocks)
-
-    assert dec.is_decoded
-    assert dec.data == data
-
-
-def test_when_no_padding_removal_then_raw_data_contains_padding():
-    data = b"ABC"
-    block_size = 2
-
-    packets, num_blocks = generate_packets(data, block_size, num_packets=50)
-
-    dec = Decode(packets, num_blocks, remove_padding=False)
-
-    assert dec.is_decoded
-
-    raw = b"".join(dec.blocks)
-
-    assert raw.startswith(data)
-    assert len(raw) > len(data)
-
-
-def test_when_no_packets_then_decode_not_complete():
-    dec = Decode([], num_blocks=3)
-    assert not dec.is_decoded
-
-    with pytest.raises(ValueError):
-        _ = dec.data
-
-
-# def test_when_duplicate_packets_then_decoder_still_works():
-#     data = b"ABCDEFGH"
-#     block_size = 2
-
-#     packets, num_blocks = generate_packets(data, block_size, num_packets=10)
-#     packets = packets + packets
-
-#     dec = Decode(packets, num_blocks)
-
-#     assert dec.is_decoded
-#     assert dec.data == data
+    assert decoder.decode() == b"AB"
