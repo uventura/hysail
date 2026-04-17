@@ -1,0 +1,16 @@
+{
+    "servers": [
+        {
+            "id": 1,
+            "storage_location": "output/server_storage/server_1"
+        },
+        {
+            "id": 2,
+            "storage_location": "output/server_storage/server_2"
+        },
+        {
+            "id": 3,
+            "storage_location": "output/server_storage/server_3"
+        }
+    ]
+}

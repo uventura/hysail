@@ -1,11 +1,11 @@
 from hysail.encryption.encode import Encode
 import click
-import os
-import pickle
+import json
 from pathlib import Path
+from hysail.server.packet_saver import PacketSaver
 
 
-def encode(input_file: str, output: str, block_size: int = 8) -> int:
+def encode(input_file: str, block_size: int = 8, server_list: list = None) -> int:
     input_path = Path(input_file)
     with open(input_path, "rb") as file:
         data = file.read()
@@ -13,12 +13,8 @@ def encode(input_file: str, output: str, block_size: int = 8) -> int:
     encoded = Encode(data, block_size)
     packets = encoded.packets
 
-    os.makedirs(output, exist_ok=True)
-    for i, packet in enumerate(packets):
-        output_file = os.path.join(output, f"{input_path.name}_packet_{packet.index}.pkl")
-        with open(output_file, "wb") as f:
-            pickle.dump(packet, f)
-
+    saver = PacketSaver(packets, input_path, server_list)
+    saver.save()
     return len(packets)
 
 
@@ -28,17 +24,21 @@ def encode(input_file: str, output: str, block_size: int = 8) -> int:
 )
 @click.option("--block-size", default=8, help="Block size for encoding")
 @click.option(
-    "--output",
-    type=click.Path(file_okay=False, dir_okay=True),
+    "--server-list",
+    type=click.Path(exists=True),
     required=True,
-    help="Directory where generated packets will be placed",
+    help="JSON file with server list schema: {'servers': [{'id': <number>, 'storage_location': <location>}, ...]}",
 )
-def main(input_file, block_size, output):
-    if input_file:
-        packet_count = encode(input_file, output, block_size)
-        click.echo(f"Encoded {packet_count} packets saved to {output}")
-    else:
+def main(input_file, block_size, server_list):
+    if not input_file:
         click.echo("Use --encode to specify a file to encode.")
+        return
+
+    with open(server_list, 'r') as f:
+        data = json.load(f)
+    servers = data['servers']
+    packet_count = encode(input_file, block_size, servers)
+    click.echo(f"Encoded {packet_count} packets distributed to {len(servers)} servers")
 
 
 if __name__ == "__main__":

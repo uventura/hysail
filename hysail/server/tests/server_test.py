@@ -5,17 +5,17 @@ import hysail.utils.galois as ga
 from hysail.server.server import Server
 
 
-def test_when_server_initialized_then_storage_dir_created(tmp_path):
-    storage_dir = tmp_path / "storage"
-    Server(str(storage_dir))
+def test_when_server_initialized_then_storage_location_created(tmp_path):
+    storage_location = tmp_path / "storage"
+    Server(str(storage_location))
 
-    assert storage_dir.exists()
-    assert storage_dir.is_dir()
+    assert storage_location.exists()
+    assert storage_location.is_dir()
 
 
 def test_when_storage_check_block_then_file_is_copied(tmp_path):
-    storage_dir = tmp_path / "storage"
-    server = Server(str(storage_dir))
+    storage_location = tmp_path / "storage"
+    server = Server(str(storage_location))
 
     block_file = tmp_path / "input_packet_0.pkl"
     block_data = b"test-data"
@@ -23,7 +23,7 @@ def test_when_storage_check_block_then_file_is_copied(tmp_path):
 
     server.storage_check_block(block_file)
 
-    saved_file = storage_dir / block_file.name
+    saved_file = storage_location / block_file.name
     assert saved_file.exists()
     assert saved_file.read_bytes() == block_data
 
