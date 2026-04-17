@@ -1,6 +1,6 @@
 import glob
-import os
 import shutil
+from pathlib import Path
 
 import hysail.utils.galois as ga
 
@@ -8,11 +8,11 @@ import hysail.utils.galois as ga
 class Server:
     def __init__(self, dir_storage: str):
         self._dir_storage = dir_storage
-        os.makedirs(self._dir_storage, exist_ok=True)
+        Path(self._dir_storage).mkdir(parents=True, exist_ok=True)
 
     def storage_check_block(self, check_block):
-        source_path = os.fspath(check_block)
-        destination_path = os.path.join(self._dir_storage, os.path.basename(source_path))
+        source_path = Path(check_block)
+        destination_path = Path(self._dir_storage) / source_path.name
         shutil.copyfile(source_path, destination_path)
 
     def download_block(self, block_index):
@@ -32,7 +32,7 @@ class Server:
         return response
 
     def _find_check_block(self, check_block_index):
-        pattern = os.path.join(self._dir_storage, f"*_packet_{check_block_index}.pkl")
+        pattern = str(Path(self._dir_storage) / f"*_packet_{check_block_index}.pkl")
         matches = glob.glob(pattern)
         return matches[0] if matches else None
 
