@@ -11,7 +11,7 @@ from rich.progress import (
 )
 
 from hysail.hysail_encode import HysailEncode
-from hysail.progress import set_progress
+from hysail.logger.progress import set_progress
 
 
 @click.command()

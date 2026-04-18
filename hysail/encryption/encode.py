@@ -4,7 +4,7 @@ import numpy as np
 
 from hysail.encryption.block import Block
 from hysail.encryption.local_mac import LocalMac
-from hysail.progress import get_progress
+from hysail.logger.progress import get_progress
 import hysail.utils.galois as ga
 import hysail.utils.operators as op
 
@@ -22,7 +22,9 @@ class Encode:
 
         prepare_task_id = None
         if self._progress is not None:
-            prepare_task_id = self._progress.add_task("Preparing data for encoding", total=2)
+            prepare_task_id = self._progress.add_task(
+                "Preparing data for encoding", total=2
+            )
 
         self._data = self._pad(data)
         if prepare_task_id is not None:

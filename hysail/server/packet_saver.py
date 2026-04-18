@@ -2,7 +2,7 @@ import pickle
 import random
 from pathlib import Path
 
-from hysail.progress import get_progress
+from hysail.logger.progress import get_progress
 from hysail.server.server import Server
 
 
