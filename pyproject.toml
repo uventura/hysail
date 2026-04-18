@@ -39,6 +39,7 @@ dependencies = [
     "ruff==0.15.6",
     "numpy==2.2.6",
     "click",
+    "rich",
 ]
 
 [project.scripts]

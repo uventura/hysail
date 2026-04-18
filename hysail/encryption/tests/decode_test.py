@@ -19,7 +19,9 @@ def test_when_finding_num_blocks_to_retrieve_then_returns_max_block_index():
         2: [Block(2, 2, [1, 2], b"\x03")],
     }
 
-    decoder = Decode(servers=[], polynomials=[], local_blocks=local_blocks, local_mac=[])
+    decoder = Decode(
+        servers=[], polynomials=[], local_blocks=local_blocks, local_mac=[]
+    )
 
     assert decoder._find_num_blocks_to_retrieve() == 2
 
@@ -87,6 +89,8 @@ def test_when_decoding_then_retrieves_blocks_in_index_order():
         1: [Block(1, 1, [1], b"A")],
         2: [Block(2, 2, [1, 2], xor_bytes(b"A", b"B"))],
     }
-    decoder = Decode(servers=[], polynomials=[], local_blocks=local_blocks, local_mac=[])
+    decoder = Decode(
+        servers=[], polynomials=[], local_blocks=local_blocks, local_mac=[]
+    )
 
     assert decoder.decode() == b"AB"

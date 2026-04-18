@@ -4,6 +4,7 @@ import numpy as np
 
 from hysail.encryption.block import Block
 from hysail.encryption.local_mac import LocalMac
+from hysail.logger.progress import get_progress
 import hysail.utils.galois as ga
 import hysail.utils.operators as op
 
@@ -16,10 +17,23 @@ class Encode:
         if not data:
             raise ValueError("Data cannot be empty")
 
+        self._progress = get_progress()
         self._block_size = block_size
+
+        prepare_task_id = None
+        if self._progress is not None:
+            prepare_task_id = self._progress.add_task(
+                "Preparing data for encoding", total=2
+            )
+
         self._data = self._pad(data)
+        if prepare_task_id is not None:
+            self._progress.advance(prepare_task_id)
 
         self._blocks = self._split_blocks(self._data, block_size)
+        if prepare_task_id is not None:
+            self._progress.advance(prepare_task_id)
+
         self._polynomials = self._polynomial_set_generation()
         self._mac_blocks = self._calculate_mac_for_each_block()
 
@@ -51,17 +65,30 @@ class Encode:
         num_to_send = int(K * overhead)
         probabilities = op.robust_soliton_distribution(K)
 
-        for index in range(num_to_send):
-            degree = np.random.choice(range(len(probabilities)), p=probabilities)
-            # Ensure degree is at least 1 (the RSD can sometimes have a tiny p(0))
-            degree = max(1, degree)
-            indices = random.sample(range(K), degree)
+        task_id = None
+        if self._progress is not None:
+            task_id = self._progress.add_task("Encoding packets", total=num_to_send)
 
-            data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
+        for index in range(num_to_send):
+            packet = self._generate_packet(index, K, probabilities)
+            degree = packet.degree
             if degree not in packets:
                 packets[degree] = []
-            packets[degree].append(Block(index, int(degree), indices, data))
+            packets[degree].append(packet)
+
+            if task_id is not None:
+                self._progress.advance(task_id)
+
         return packets
+
+    def _generate_packet(self, index, K, probabilities):
+        degree = np.random.choice(range(len(probabilities)), p=probabilities)
+        # Ensure degree is at least 1 (the RSD can sometimes have a tiny p(0))
+        degree = max(1, degree)
+        indices = random.sample(range(K), degree)
+
+        data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
+        return Block(index, int(degree), indices, data)
 
     def _pad(self, data):
         pad = self._block_size - (len(data) % self._block_size)
@@ -74,6 +101,13 @@ class Encode:
 
     def _calculate_mac_for_each_block(self):
         mac_blocks = {}
+        task_id = None
+        if self._progress is not None:
+            task_id = self._progress.add_task(
+                "Calculating MAC blocks",
+                total=len(self._blocks) * len(self._polynomials),
+            )
+
         for index, block in enumerate(self._blocks):
             representation = ga.bytes_to_poly_coeffs(block)
             mac_blocks[index] = []
@@ -85,13 +119,24 @@ class Encode:
                     block_index=index,
                 )
                 mac_blocks[index].append(mac)
+                if task_id is not None:
+                    self._progress.advance(task_id)
 
         return mac_blocks
 
     def _polynomial_set_generation(self):
         polynomials = []
-        for _ in range(POLYNOMIAL_SET_SIZE):
+        task_id = None
+        if self._progress is not None:
+            task_id = self._progress.add_task(
+                "Generating challenge polynomials", total=POLYNOMIAL_SET_SIZE
+            )
+
+        while len(polynomials) < POLYNOMIAL_SET_SIZE:
             polynomial = ga.generate_challenge_polynomial()
             if polynomial.tolist() not in [p.tolist() for p in polynomials]:
                 polynomials.append(polynomial)
+                if task_id is not None:
+                    self._progress.advance(task_id)
+
         return polynomials

@@ -1,28 +1,29 @@
-from hysail.encryption.encode import Encode
-import click
 import json
-from pathlib import Path
-from hysail.server.packet_saver import PacketSaver
 
+import click
+from rich.progress import (
+    BarColumn,
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    TimeElapsedColumn,
+    TimeRemainingColumn,
+)
 
-def encode(input_file: str, block_size: int = 8, server_list: list = None) -> int:
-    input_path = Path(input_file)
-    with open(input_path, "rb") as file:
-        data = file.read()
-
-    encoded = Encode(data, block_size)
-    packets = encoded.packets
-
-    saver = PacketSaver(packets, input_path, server_list)
-    saver.save()
-    return len(packets)
+from hysail.hysail_encode import HysailEncode
+from hysail.logger.progress import set_progress
 
 
 @click.command()
 @click.option(
     "--encode", "input_file", type=click.Path(exists=True), help="File to encode"
 )
-@click.option("--block-size", default=8, help="Block size for encoding")
+@click.option(
+    "--block-size",
+    type=int,
+    default=None,
+    help="Block size for encoding; if omitted, uses 10% of the file size",
+)
 @click.option(
     "--server-list",
     type=click.Path(exists=True),
@@ -34,10 +35,22 @@ def main(input_file, block_size, server_list):
         click.echo("Use --encode to specify a file to encode.")
         return
 
-    with open(server_list, 'r') as f:
+    with open(server_list, "r") as f:
         data = json.load(f)
-    servers = data['servers']
-    packet_count = encode(input_file, block_size, servers)
+    servers = data["servers"]
+    with Progress(
+        SpinnerColumn(),
+        "[progress.description]{task.description}",
+        BarColumn(),
+        TextColumn("{task.completed}/{task.total}"),
+        TimeElapsedColumn(),
+        TimeRemainingColumn(),
+    ) as progress:
+        set_progress(progress)
+        hysail_encode = HysailEncode(input_file, block_size, servers)
+        packet_count = hysail_encode.encode()
+        set_progress(None)
+
     click.echo(f"Encoded {packet_count} packets distributed to {len(servers)} servers")
 
 

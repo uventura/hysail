@@ -69,8 +69,9 @@ def test_when_single_small_block_then_packet_reflects_padding():
     data = b"A"
     block_size = 10
 
-    with patch("hysail.encryption.encode.np.random.choice", return_value=1), patch(
-        "hysail.encryption.encode.random.sample", return_value=[0]
+    with (
+        patch("hysail.encryption.encode.np.random.choice", return_value=1),
+        patch("hysail.encryption.encode.random.sample", return_value=[0]),
     ):
         enc = Encode(data, block_size)
         pkt = enc.packets[0]
@@ -97,8 +98,9 @@ def test_when_xoring_blocks_then_packet_matches_manual_xor():
     data = b"\x01\x02\x03\x04"
     block_size = 1
 
-    with patch("hysail.encryption.encode.np.random.choice", return_value=3), patch(
-        "hysail.encryption.encode.random.sample", return_value=[2, 0, 1]
+    with (
+        patch("hysail.encryption.encode.np.random.choice", return_value=3),
+        patch("hysail.encryption.encode.random.sample", return_value=[2, 0, 1]),
     ):
         enc = Encode(data, block_size)
         pkt = enc.packets[0]
@@ -138,8 +140,9 @@ def test_when_mocking_random_then_indices_order_is_respected():
     data = b"ABCDEFGH"
     block_size = 2
 
-    with patch("hysail.encryption.encode.np.random.choice", return_value=3), patch(
-        "hysail.encryption.encode.random.sample", return_value=[2, 0, 1]
+    with (
+        patch("hysail.encryption.encode.np.random.choice", return_value=3),
+        patch("hysail.encryption.encode.random.sample", return_value=[2, 0, 1]),
     ):
         enc = Encode(data, block_size)
         pkt = enc.packets[0]
@@ -152,8 +155,9 @@ def test_when_indices_order_forced_then_packet_respects_that_order():
     data = b"ABCDEFGH"
     block_size = 2
 
-    with patch("hysail.encryption.encode.np.random.choice", return_value=3), patch(
-        "hysail.encryption.encode.random.sample", return_value=[2, 0, 1]
+    with (
+        patch("hysail.encryption.encode.np.random.choice", return_value=3),
+        patch("hysail.encryption.encode.random.sample", return_value=[2, 0, 1]),
     ):
         enc = Encode(data, block_size)
         pkt = enc.packets[0]
