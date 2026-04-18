@@ -68,20 +68,25 @@ class Encode:
             task_id = self._progress.add_task("Encoding packets", total=num_to_send)
 
         for index in range(num_to_send):
-            degree = np.random.choice(range(len(probabilities)), p=probabilities)
-            # Ensure degree is at least 1 (the RSD can sometimes have a tiny p(0))
-            degree = max(1, degree)
-            indices = random.sample(range(K), degree)
-
-            data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
+            packet = self._generate_packet(index, K, probabilities)
+            degree = packet.degree
             if degree not in packets:
                 packets[degree] = []
-            packets[degree].append(Block(index, int(degree), indices, data))
+            packets[degree].append(packet)
 
             if task_id is not None:
                 self._progress.advance(task_id)
 
         return packets
+
+    def _generate_packet(self, index, K, probabilities):
+        degree = np.random.choice(range(len(probabilities)), p=probabilities)
+        # Ensure degree is at least 1 (the RSD can sometimes have a tiny p(0))
+        degree = max(1, degree)
+        indices = random.sample(range(K), degree)
+
+        data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
+        return Block(index, int(degree), indices, data)
 
     def _pad(self, data):
         pad = self._block_size - (len(data) % self._block_size)

@@ -18,12 +18,15 @@ def test_encode_uses_block_size_percentage_for_fallback(tmp_path, monkeypatch):
             captured["data"] = data_arg
             captured["block_size"] = block_size_arg
             self.packets = []
+            self.mac_blocks = {}
+            self.polynomials = []
 
     class DummySaver:
-        def __init__(self, packets, input_path, server_list):
+        def __init__(self, packets, input_path, server_list, metadata=None):
             captured["packets"] = packets
             captured["input_path"] = input_path
             captured["server_list"] = server_list
+            captured["metadata"] = metadata
 
         def save(self):
             pass
