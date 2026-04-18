@@ -1,6 +1,6 @@
 import math
 
-from hysail.hysail import (
+from hysail.hysail_encode import (
     DEFAULT_BLOCK_SIZE_PERCENTAGE,
     encode,
 )
@@ -14,24 +14,22 @@ def test_encode_uses_block_size_percentage_for_fallback(tmp_path, monkeypatch):
     captured = {}
 
     class DummyEncode:
-        def __init__(self, data_arg, block_size_arg, progress=None):
+        def __init__(self, data_arg, block_size_arg):
             captured["data"] = data_arg
             captured["block_size"] = block_size_arg
-            captured["progress"] = progress
             self.packets = []
 
     class DummySaver:
-        def __init__(self, packets, input_path, server_list, progress=None):
+        def __init__(self, packets, input_path, server_list):
             captured["packets"] = packets
             captured["input_path"] = input_path
             captured["server_list"] = server_list
-            captured["progress"] = progress
 
         def save(self):
             pass
 
-    monkeypatch.setattr("hysail.hysail.Encode", DummyEncode)
-    monkeypatch.setattr("hysail.hysail.PacketSaver", DummySaver)
+    monkeypatch.setattr("hysail.hysail_encode.Encode", DummyEncode)
+    monkeypatch.setattr("hysail.hysail_encode.PacketSaver", DummySaver)
 
     server_list = [{"id": 1, "storage_location": str(tmp_path / "server1")}]
     packet_count = encode(str(file_path), None, server_list)
