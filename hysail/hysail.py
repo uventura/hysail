@@ -10,7 +10,7 @@ from rich.progress import (
     TimeRemainingColumn,
 )
 
-from hysail.hysail_encode import encode
+from hysail.hysail_encode import HysailEncode
 from hysail.progress import set_progress
 
 
@@ -47,7 +47,8 @@ def main(input_file, block_size, server_list):
         TimeRemainingColumn(),
     ) as progress:
         set_progress(progress)
-        packet_count = encode(input_file, block_size, servers)
+        hysail_encode = HysailEncode(input_file, block_size, servers)
+        packet_count = hysail_encode.encode()
         set_progress(None)
 
     click.echo(f"Encoded {packet_count} packets distributed to {len(servers)} servers")
