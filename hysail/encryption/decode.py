@@ -138,12 +138,19 @@ class Decode:
     def _load_from_metadata(self, metadata_file):
         metadata = EncodingMetadata.load(Path(metadata_file))
         server_cache = {server._storage_location: server for server in self._servers}
+        execution_logger.debug(
+            f"Loaded metadata from {metadata_file}: "
+            f"{len(metadata.polynomials)} polynomials, "
+            f"{len(metadata.blocks)} block MACs, "
+            f"{len(metadata.packets)} packets"
+        )
         self._polynomials = metadata.polynomials
         self._local_blocks = self._build_local_blocks(metadata, server_cache)
         self._local_mac = self._build_local_mac(metadata)
 
     def _build_local_blocks(self, metadata, server_cache):
         local_blocks = {}
+        execution_logger.debug("Building local blocks from metadata")
         for packet in metadata.packets:
             server = server_cache.get(packet.server)
             if server is None:
@@ -158,16 +165,34 @@ class Decode:
                 server=server,
             )
             local_blocks.setdefault(packet.degree, []).append(local_block)
+            execution_logger.debug(
+                "Generated local block: "
+                f"index={local_block.index}, "
+                f"degree={local_block.degree}, "
+                f"indices={local_block.indices}, "
+                f"server={local_block.server._storage_location}"
+            )
+
+        execution_logger.debug(
+            f"Built local blocks grouped by degree: "
+            f"{ {degree: len(blocks) for degree, blocks in local_blocks.items()} }"
+        )
         return local_blocks
 
     def _build_local_mac(self, metadata):
         if not metadata.blocks:
+            execution_logger.debug("No local MAC entries found in metadata")
             return []
 
         num_blocks = max(block.block_index for block in metadata.blocks) + 1
         local_mac = [
             [None for _ in range(len(metadata.polynomials))] for _ in range(num_blocks)
         ]
+
+        execution_logger.debug(
+            f"Building local MAC matrix with {num_blocks} blocks and "
+            f"{len(metadata.polynomials)} polynomials"
+        )
 
         for block_metadata in metadata.blocks:
             local_mac[block_metadata.block_index][block_metadata.polynomial_index] = (
@@ -177,6 +202,17 @@ class Decode:
                     block_index=block_metadata.block_index,
                 )
             )
+            execution_logger.debug(
+                "Generated local MAC: "
+                f"block_index={block_metadata.block_index}, "
+                f"polynomial_index={block_metadata.polynomial_index}, "
+                f"mac_value={block_metadata.mac_value}"
+            )
+
+        execution_logger.debug(
+            "Built local MAC matrix occupancy: "
+            f"{[sum(mac is not None for mac in row) for row in local_mac]}"
+        )
 
         return local_mac
 
@@ -184,7 +220,15 @@ class Decode:
         with open(server_file, "r") as file:
             data = json.load(file)
 
-        return [
+        servers = [
             Server(server_dict["storage_location"])
             for server_dict in data.get("servers", [])
         ]
+
+        execution_logger.debug(f"Loaded {len(servers)} servers from {server_file}")
+        for server in servers:
+            execution_logger.debug(
+                f"Generated server: storage_location={server._storage_location}"
+            )
+
+        return servers
