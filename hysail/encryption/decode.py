@@ -10,6 +10,7 @@ from hysail.encryption.local_mac import LocalMac
 from hysail.logger.logger import execution_logger
 from hysail.server.server import Server
 from hysail.utils.operators import xor_bytes
+from hysail.utils.padding import remove_padding
 
 
 class Decode:
@@ -26,7 +27,7 @@ class Decode:
         result = b""
         for msg_i in sorted(data.keys()):
             result += data[msg_i].data
-        return result
+        return remove_padding(result)
 
     def _retrieve_blocks(self):
         retrieved_data = {}
