@@ -34,5 +34,11 @@ def test_when_saving_multiple_packets_then_each_block_has_server(tmp_path):
 
     assert packets[0].server is not None
     assert packets[1].server is not None
-    assert packets[0].server._storage_location in {str(tmp_path / "server1"), str(tmp_path / "server2")}
-    assert packets[1].server._storage_location in {str(tmp_path / "server1"), str(tmp_path / "server2")}
+    assert packets[0].server._storage_location in {
+        str(tmp_path / "server1"),
+        str(tmp_path / "server2"),
+    }
+    assert packets[1].server._storage_location in {
+        str(tmp_path / "server1"),
+        str(tmp_path / "server2"),
+    }

@@ -32,7 +32,9 @@ class Server:
         return response
 
     def _find_check_block(self, check_block_index):
-        pattern = str(Path(self._storage_location) / f"*_packet_{check_block_index}.pkl")
+        pattern = str(
+            Path(self._storage_location) / f"*_packet_{check_block_index}.pkl"
+        )
         matches = glob.glob(pattern)
         return matches[0] if matches else None
 
