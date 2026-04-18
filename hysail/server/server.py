@@ -1,4 +1,5 @@
 import glob
+import pickle
 import shutil
 from pathlib import Path
 
@@ -20,8 +21,7 @@ class Server:
         if block_path is None:
             raise ValueError("Check block not found")
 
-        with open(block_path, "rb") as file:
-            return file.read()
+        return self._read_block_data(block_path)
 
     def receive_challenge(self, polynomial, check_block_index):
         block_path = self._find_check_block(check_block_index)
@@ -39,7 +39,19 @@ class Server:
         return matches[0] if matches else None
 
     def _compute_response(self, polynomial, block_path):
-        with open(block_path, "rb") as file:
-            data = file.read()
+        data = self._read_block_data(block_path)
         coefs = ga.bytes_to_poly_coeffs(data)
         return ga.gf2_poly_mod(coefs, polynomial)
+
+    def _read_block_data(self, block_path):
+        with open(block_path, "rb") as file:
+            try:
+                payload = pickle.load(file)
+            except (pickle.UnpicklingError, EOFError):
+                file.seek(0)
+                return file.read()
+
+        if hasattr(payload, "data"):
+            return payload.data
+
+        return payload

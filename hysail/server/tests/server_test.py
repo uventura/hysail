@@ -1,7 +1,10 @@
+import pickle
+
 import numpy as np
 import pytest
 
 import hysail.utils.galois as ga
+from hysail.encryption.block import Block
 from hysail.server.server import Server
 
 
@@ -37,6 +40,18 @@ def test_when_download_block_then_returns_block_bytes(tmp_path):
     server.storage_check_block(block_file)
 
     assert server.download_block(1) == block_data
+
+
+def test_server_reads_pickled_packet_data(tmp_path):
+    server = Server(str(tmp_path / "storage"))
+    block_file = tmp_path / "input_packet_7.pkl"
+
+    with open(block_file, "wb") as file:
+        pickle.dump(Block(7, 1, [0], b"\x03\x04"), file)
+
+    server.storage_check_block(block_file)
+
+    assert server.download_block(7) == b"\x03\x04"
 
 
 def test_when_download_block_missing_then_raises(tmp_path):

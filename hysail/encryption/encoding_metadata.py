@@ -16,6 +16,8 @@ class BlockMetadata:
 @dataclass
 class PacketMetadata:
     server: str  # storage_location
+    packet_index: int
+    degree: int
     indices: List[int]
 
 
@@ -25,8 +27,10 @@ class EncodingMetadata:
     blocks: List[BlockMetadata]
     packets: List[PacketMetadata]
 
-    def add_packet(self, server: str, indices: List[int]):
-        self.packets.append(PacketMetadata(server, indices))
+    def add_packet(
+        self, server: str, packet_index: int, degree: int, indices: List[int]
+    ):
+        self.packets.append(PacketMetadata(server, packet_index, degree, indices))
 
     def save(self, file_path: Path):
         with open(file_path, "wb") as f:

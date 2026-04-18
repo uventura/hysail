@@ -1,17 +1,25 @@
-from hysail.utils.operators import xor_bytes
-from hysail.encryption.block import Block
-from hysail.logger.logger import execution_logger
+import json
+import random
+from pathlib import Path
 
 import numpy as np
-import random
+
+from hysail.encryption.block import Block, LocalBlock
+from hysail.encryption.encoding_metadata import EncodingMetadata
+from hysail.encryption.local_mac import LocalMac
+from hysail.logger.logger import execution_logger
+from hysail.server.server import Server
+from hysail.utils.operators import xor_bytes
 
 
 class Decode:
-    def __init__(self, servers, polynomials, local_blocks, local_mac):
-        self._servers = servers
-        self._polynomials = polynomials
-        self._local_blocks = local_blocks
-        self._local_mac = local_mac
+    def __init__(self, metadata_file, server_file):
+        self._servers = self._load_servers(server_file)
+        self._polynomials = []
+        self._local_blocks = {}
+        self._local_mac = []
+
+        self._load_from_metadata(metadata_file)
 
     def decode(self):
         data = self._retrieve_blocks()
@@ -67,13 +75,12 @@ class Decode:
         return retrieved_data
 
     def _find_num_blocks_to_retrieve(self):
-        num_blocks_to_retrieve = 0
-        for block in self._local_blocks:
-            for e in self._local_blocks[block]:
-                max_index = max(e.indices)
-                if max_index > num_blocks_to_retrieve:
-                    num_blocks_to_retrieve = max_index
-        return num_blocks_to_retrieve
+        max_index = -1
+        for blocks in self._local_blocks.values():
+            for block in blocks:
+                if block.indices:
+                    max_index = max(max_index, max(block.indices))
+        return max_index + 1
 
     def _count_solvable_parts(self, block, retrieved_indices):
         return len(block.indices) - len(set(block.indices) & retrieved_indices)
@@ -127,3 +134,101 @@ class Decode:
                 execution_logger.debug(f"  {e}")
             execution_logger.debug("-" * 10)
         execution_logger.debug("_" * 20)
+
+    def _load_from_metadata(self, metadata_file):
+        metadata = EncodingMetadata.load(Path(metadata_file))
+        server_cache = {server._storage_location: server for server in self._servers}
+        execution_logger.debug(
+            f"Loaded metadata from {metadata_file}: "
+            f"{len(metadata.polynomials)} polynomials, "
+            f"{len(metadata.blocks)} block MACs, "
+            f"{len(metadata.packets)} packets"
+        )
+        self._polynomials = metadata.polynomials
+        self._local_blocks = self._build_local_blocks(metadata, server_cache)
+        self._local_mac = self._build_local_mac(metadata)
+
+    def _build_local_blocks(self, metadata, server_cache):
+        local_blocks = {}
+        execution_logger.debug("Building local blocks from metadata")
+        for packet in metadata.packets:
+            server = server_cache.get(packet.server)
+            if server is None:
+                raise ValueError(
+                    f"Server not found for storage location: {packet.server}"
+                )
+
+            local_block = LocalBlock(
+                index=packet.packet_index,
+                degree=packet.degree,
+                indices=list(packet.indices),
+                server=server,
+            )
+            local_blocks.setdefault(packet.degree, []).append(local_block)
+            execution_logger.debug(
+                "Generated local block: "
+                f"index={local_block.index}, "
+                f"degree={local_block.degree}, "
+                f"indices={local_block.indices}, "
+                f"server={local_block.server._storage_location}"
+            )
+
+        execution_logger.debug(
+            f"Built local blocks grouped by degree: "
+            f"{ {degree: len(blocks) for degree, blocks in local_blocks.items()} }"
+        )
+        return local_blocks
+
+    def _build_local_mac(self, metadata):
+        if not metadata.blocks:
+            execution_logger.debug("No local MAC entries found in metadata")
+            return []
+
+        num_blocks = max(block.block_index for block in metadata.blocks) + 1
+        local_mac = [
+            [None for _ in range(len(metadata.polynomials))] for _ in range(num_blocks)
+        ]
+
+        execution_logger.debug(
+            f"Building local MAC matrix with {num_blocks} blocks and "
+            f"{len(metadata.polynomials)} polynomials"
+        )
+
+        for block_metadata in metadata.blocks:
+            local_mac[block_metadata.block_index][block_metadata.polynomial_index] = (
+                LocalMac(
+                    mac=block_metadata.mac_value,
+                    polynomial_index=block_metadata.polynomial_index,
+                    block_index=block_metadata.block_index,
+                )
+            )
+            execution_logger.debug(
+                "Generated local MAC: "
+                f"block_index={block_metadata.block_index}, "
+                f"polynomial_index={block_metadata.polynomial_index}, "
+                f"mac_value={block_metadata.mac_value}"
+            )
+
+        execution_logger.debug(
+            "Built local MAC matrix occupancy: "
+            f"{[sum(mac is not None for mac in row) for row in local_mac]}"
+        )
+
+        return local_mac
+
+    def _load_servers(self, server_file):
+        with open(server_file, "r") as file:
+            data = json.load(file)
+
+        servers = [
+            Server(server_dict["storage_location"])
+            for server_dict in data.get("servers", [])
+        ]
+
+        execution_logger.debug(f"Loaded {len(servers)} servers from {server_file}")
+        for server in servers:
+            execution_logger.debug(
+                f"Generated server: storage_location={server._storage_location}"
+            )
+
+        return servers

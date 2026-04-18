@@ -53,7 +53,12 @@ class PacketSaver:
             pickle.dump(packet, f)
 
         if self.metadata:
-            self.metadata.add_packet(server._storage_location, packet.indices)
+            self.metadata.add_packet(
+                server._storage_location,
+                packet.index,
+                packet.degree,
+                packet.indices,
+            )
 
         if task_id is not None:
             self.progress.advance(task_id)
