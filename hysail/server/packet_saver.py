@@ -4,15 +4,16 @@ from pathlib import Path
 
 from hysail.logger.progress import get_progress
 from hysail.server.server import Server
+from hysail.encryption.encoding_metadata import PacketMetadata
 
 
 class PacketSaver:
-    def __init__(self, packets, input_path, server_list=None, metadata=None):
+    def __init__(self, packets, input_path, server_list=None):
         self.packets = packets
         self.input_path = input_path
         self.server_list = server_list
-        self.metadata = metadata
         self.progress = get_progress()
+        self._packet_metadata = []
 
     def save(self):
         if not self.server_list:
@@ -20,8 +21,10 @@ class PacketSaver:
 
         self._shuffle_packets()
         self._save_to_servers()
-        if self.metadata:
-            self._save_metadata()
+
+    @property
+    def packet_metadata(self):
+        return self._packet_metadata
 
     def _shuffle_packets(self):
         random.shuffle(self.packets)
@@ -52,17 +55,14 @@ class PacketSaver:
         with open(packet_file, "wb") as f:
             pickle.dump(packet, f)
 
-        if self.metadata:
-            self.metadata.add_packet(
-                server._storage_location,
-                packet.index,
-                packet.degree,
-                packet.indices,
+        self._packet_metadata.append(
+            PacketMetadata(
+                server=server._storage_location,
+                packet_index=packet.index,
+                degree=packet.degree,
+                indices=packet.indices,
             )
+        )
 
         if task_id is not None:
             self.progress.advance(task_id)
-
-    def _save_metadata(self):
-        metadata_file = self.input_path.parent / f"{self.input_path.stem}_metadata.pkl"
-        self.metadata.save(metadata_file)

@@ -67,10 +67,17 @@ def encode_command(input_file, block_size, server_list):
     required=True,
     help="JSON file with server information for decoding",
 )
-def decode_command(metadata_file, server_file):
+@click.option(
+    "--output-file",
+    type=click.Path(),
+    default="./",
+    show_default=True,
+    help="Path where the decoded file will be written",
+)
+def decode_command(metadata_file, server_file, output_file):
     with _create_progress() as progress:
         set_progress(progress)
-        hysail_decode = HysailDecode(metadata_file, server_file)
+        hysail_decode = HysailDecode(metadata_file, server_file, output_file)
         output_path = hysail_decode.decode()
         set_progress(None)
 

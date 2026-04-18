@@ -1,4 +1,5 @@
 import math
+from pathlib import Path
 
 from click.testing import CliRunner
 
@@ -24,14 +25,17 @@ def test_encode_uses_block_size_percentage_for_fallback(tmp_path, monkeypatch):
             self.polynomials = []
 
     class DummySaver:
-        def __init__(self, packets, input_path, server_list, metadata=None):
+        def __init__(self, packets, input_path, server_list):
             captured["packets"] = packets
             captured["input_path"] = input_path
             captured["server_list"] = server_list
-            captured["metadata"] = metadata
 
         def save(self):
             pass
+
+        @property
+        def packet_metadata(self):
+            return []
 
     monkeypatch.setattr("hysail.hysail_encode.Encode", DummyEncode)
     monkeypatch.setattr("hysail.hysail_encode.PacketSaver", DummySaver)
@@ -94,6 +98,32 @@ def test_decode_uses_explicit_output_file_when_provided(tmp_path, monkeypatch):
     assert output_path.read_bytes() == b"custom-output"
 
 
+def test_decode_uses_current_directory_when_output_file_is_dot_slash(
+    tmp_path, monkeypatch
+):
+    metadata_file = tmp_path / "payload_metadata.pkl"
+    server_file = tmp_path / "servers.json"
+    metadata_file.write_bytes(b"metadata")
+    server_file.write_text('{"servers": []}')
+
+    class DummyDecode:
+        def __init__(self, metadata_file_arg, server_file_arg):
+            assert metadata_file_arg == str(metadata_file)
+            assert server_file_arg == str(server_file)
+
+        def decode(self):
+            return b"decoded-content"
+
+    monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.chdir(tmp_path)
+
+    hysail_decode = HysailDecode(str(metadata_file), str(server_file), "./")
+    output_path = hysail_decode.decode()
+
+    assert output_path == Path("payload_decoded.bin")
+    assert output_path.read_bytes() == b"decoded-content"
+
+
 def test_decode_advances_progress_bar_for_each_step(tmp_path, monkeypatch):
     metadata_file = tmp_path / "payload_metadata.pkl"
     server_file = tmp_path / "servers.json"
@@ -141,9 +171,10 @@ def test_cli_decode_invokes_hysail_decode(tmp_path, monkeypatch):
     captured = {}
 
     class DummyHysailDecode:
-        def __init__(self, metadata_file_arg, server_file_arg):
+        def __init__(self, metadata_file_arg, server_file_arg, output_file_arg=None):
             captured["metadata_file"] = metadata_file_arg
             captured["server_file"] = server_file_arg
+            captured["output_file"] = output_file_arg
 
         def decode(self):
             return tmp_path / "payload_decoded.bin"
@@ -159,6 +190,47 @@ def test_cli_decode_invokes_hysail_decode(tmp_path, monkeypatch):
     assert result.exit_code == 0
     assert captured["metadata_file"] == str(metadata_file)
     assert captured["server_file"] == str(server_file)
+    assert captured["output_file"] == "./"
+    assert "Decoded file written to" in result.output
+
+
+def test_cli_decode_passes_output_file_when_provided(tmp_path, monkeypatch):
+    metadata_file = tmp_path / "payload_metadata.pkl"
+    server_file = tmp_path / "servers.json"
+    output_file = tmp_path / "custom" / "result.bin"
+    metadata_file.write_bytes(b"metadata")
+    server_file.write_text('{"servers": []}')
+
+    captured = {}
+
+    class DummyHysailDecode:
+        def __init__(self, metadata_file_arg, server_file_arg, output_file_arg=None):
+            captured["metadata_file"] = metadata_file_arg
+            captured["server_file"] = server_file_arg
+            captured["output_file"] = output_file_arg
+
+        def decode(self):
+            return output_file
+
+    monkeypatch.setattr("hysail.hysail.HysailDecode", DummyHysailDecode)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "decode",
+            str(metadata_file),
+            "--server-file",
+            str(server_file),
+            "--output-file",
+            str(output_file),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert captured["metadata_file"] == str(metadata_file)
+    assert captured["server_file"] == str(server_file)
+    assert captured["output_file"] == str(output_file)
     assert "Decoded file written to" in result.output
 
 
