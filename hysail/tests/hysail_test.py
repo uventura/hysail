@@ -1,9 +1,7 @@
 import math
 
-from hysail.hysail_encode import (
-    DEFAULT_BLOCK_SIZE_PERCENTAGE,
-    encode,
-)
+from hysail.constant import DEFAULT_BLOCK_SIZE_PERCENTAGE
+from hysail.hysail_encode import HysailEncode
 
 
 def test_encode_uses_block_size_percentage_for_fallback(tmp_path, monkeypatch):
@@ -35,7 +33,8 @@ def test_encode_uses_block_size_percentage_for_fallback(tmp_path, monkeypatch):
     monkeypatch.setattr("hysail.hysail_encode.PacketSaver", DummySaver)
 
     server_list = [{"id": 1, "storage_location": str(tmp_path / "server1")}]
-    packet_count = encode(str(file_path), None, server_list)
+    hysail_encode = HysailEncode(str(file_path), None, server_list)
+    packet_count = hysail_encode.encode()
 
     expected_block_size = max(1, math.ceil(len(data) * DEFAULT_BLOCK_SIZE_PERCENTAGE))
     assert captured["block_size"] == expected_block_size
