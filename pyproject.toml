@@ -17,7 +17,7 @@ testpaths = [
 
 [project]
 name = "hysail"
-version = "0.0.1"
+version = "1.0.0"
 authors = [
     {name = "ualivent", email="ualivent@gmail.com"}
 ]
