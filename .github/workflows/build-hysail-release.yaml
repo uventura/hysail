@@ -1,0 +1,29 @@
+name: Build HySAIL Release
+run-name: ${{ github.actor }}
+on: [push]
+permissions:
+  contents: write
+jobs:
+  Explore-GitHub-Actions:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository code
+        uses: actions/checkout@v4
+
+      - name: Build distribution files
+        run: |
+          python3 -m pip install --upgrade build
+          python3 -m build
+
+      - name: Create Release on Github
+        uses: softprops/action-gh-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: release
+          name: Release - release
+          generate_release_notes: true
+          prerelease: true
+          files: |
+            dist/*.tar.gz
+            dist/*.whl
