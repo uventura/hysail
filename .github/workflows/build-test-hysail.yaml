@@ -33,6 +33,11 @@ jobs:
         run: |
           python -m venv hysail_env
 
+      - name: Create required directories
+        run: |
+          mkdir -p logs
+          mkdir -p output
+
       - name: Build project environment
         run: |
           chmod +x ./scripts/*.sh
