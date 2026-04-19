@@ -68,3 +68,6 @@ class HysailEncode:
                 degree=packet.degree,
                 indices=packet.indices,
             )
+
+        metadata_file = Path(self.input_file).parent / f"{Path(self.input_file).stem}_metadata.pkl"
+        metadata.save(metadata_file)

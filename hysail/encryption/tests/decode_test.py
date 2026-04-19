@@ -108,7 +108,9 @@ def test_when_decoding_then_removes_valid_padding_from_reconstructed_payload():
     assert decoder.decode() == b"DATA"
 
 
-def test_decode_loads_metadata_and_reconstructs_runtime_objects(tmp_path):
+def test_when_metadata_is_loaded_then_decode_reconstructs_runtime_objects(
+    tmp_path,
+):
     server_dir = tmp_path / "server1"
     server_dir.mkdir()
 
