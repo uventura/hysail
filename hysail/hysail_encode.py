@@ -13,10 +13,12 @@ class HysailEncode:
         input_file: str,
         block_size: int | None = None,
         server_list: list = None,
+        metadata_output: str = "./",
     ):
         self.input_file = input_file
         self.block_size = block_size
         self.server_list = server_list
+        self.metadata_output = metadata_output
 
     def encode(self) -> int:
         input_path = Path(self.input_file)
@@ -69,5 +71,5 @@ class HysailEncode:
                 indices=packet.indices,
             )
 
-        metadata_file = Path(self.input_file).parent / f"{Path(self.input_file).stem}_metadata.pkl"
+        metadata_file = Path(self.metadata_output) / f"{Path(self.input_file).stem}_metadata.pkl"
         metadata.save(metadata_file)

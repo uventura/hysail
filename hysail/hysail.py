@@ -45,14 +45,21 @@ def main():
     required=True,
     help="JSON file with server list schema: {'servers': [{'id': <number>, 'storage_location': <location>}, ...]}",
 )
-def encode_command(input_file, block_size, server_list):
+@click.option(
+    "--metadata-output",
+    type=click.Path(),
+    default="./",
+    show_default=True,
+    help="Path where the metadata file will be written",
+)
+def encode_command(input_file, block_size, server_list, metadata_output):
     with open(server_list, "r") as f:
         data = json.load(f)
     servers = data["servers"]
 
     with _create_progress() as progress:
         set_progress(progress)
-        hysail_encode = HysailEncode(input_file, block_size, servers)
+        hysail_encode = HysailEncode(input_file, block_size, servers, metadata_output)
         packet_count = hysail_encode.encode()
         set_progress(None)
 
