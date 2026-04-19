@@ -7,8 +7,8 @@ from hysail.encryption.local_mac import LocalMac
 from hysail.logger.progress import get_progress
 import hysail.utils.galois as ga
 import hysail.utils.operators as op
-
-POLYNOMIAL_SET_SIZE = 40
+from hysail.utils.padding import add_padding
+from hysail.constant import POLYNOMIAL_SET_SIZE
 
 
 # It uses LtCode
@@ -26,7 +26,7 @@ class Encode:
                 "Preparing data for encoding", total=2
             )
 
-        self._data = self._pad(data)
+        self._data = add_padding(data, self._block_size)
         if prepare_task_id is not None:
             self._progress.advance(prepare_task_id)
 
@@ -89,12 +89,6 @@ class Encode:
 
         data = reduce(op.xor_bytes, (self._blocks[i] for i in indices))
         return Block(index, int(degree), indices, data)
-
-    def _pad(self, data):
-        pad = self._block_size - (len(data) % self._block_size)
-        if pad == 0:
-            pad = self._block_size
-        return data + bytes([pad]) * pad
 
     def _split_blocks(self, data, block_size):
         return [data[i : i + block_size] for i in range(0, len(data), block_size)]

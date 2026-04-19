@@ -1,7 +1,7 @@
 import numpy as np
 import secrets
 
-_LAMBDA = 127
+from hysail.constant import POLYNOMIAL_LAMBDA
 
 
 def bytes_to_poly_coeffs(message_block):
@@ -33,7 +33,7 @@ def gf2_poly_mod(m_coeffs, p_coeffs):
     return np.array(m)
 
 
-def generate_challenge_polynomial(degree=_LAMBDA):
+def generate_challenge_polynomial(degree=POLYNOMIAL_LAMBDA):
     """
     Generates a random polynomial to serve as a challenge P_j(x).
     Note: For true Hy-SAIL security, this should be a verified

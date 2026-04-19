@@ -27,10 +27,10 @@ class HysailEncode:
         encoded = Encode(data, block_size)
         packets = encoded.packets
 
-        metadata = self._collect_metadata(encoded)
-
-        saver = PacketSaver(packets, input_path, self.server_list, metadata)
+        saver = PacketSaver(packets, input_path, self.server_list)
         saver.save()
+
+        self._save_packet_metadata(encoded, saver)
         return len(packets)
 
     def _collect_metadata(self, encoded):
@@ -57,3 +57,17 @@ class HysailEncode:
             raise ValueError("Block size must be a positive integer")
 
         return self.block_size
+
+    def _save_packet_metadata(self, encoded, saver):
+        metadata = self._collect_metadata(encoded)
+
+        for packet in saver.packet_metadata:
+            metadata.add_packet(
+                server=packet.server,
+                packet_index=packet.packet_index,
+                degree=packet.degree,
+                indices=packet.indices,
+            )
+
+        metadata_file = Path(self.input_file).parent / f"{Path(self.input_file).stem}_metadata.pkl"
+        metadata.save(metadata_file)

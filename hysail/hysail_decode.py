@@ -42,11 +42,19 @@ class HysailDecode:
         return output_path
 
     def _determine_output_path(self, metadata_path: Path) -> Path:
-        if self.output_file is not None:
-            return Path(self.output_file)
-
         output_stem = metadata_path.stem
         if output_stem.endswith("_metadata"):
             output_stem = output_stem[: -len("_metadata")]
 
-        return metadata_path.with_name(f"{output_stem}_decoded.bin")
+        output_name = f"{output_stem}_decoded.bin"
+        if self.output_file is None:
+            return metadata_path.with_name(output_name)
+
+        output_path = Path(self.output_file)
+        if output_path in {Path("."), Path("./")}:
+            return output_path / output_name
+
+        if output_path.exists() and output_path.is_dir():
+            return output_path / output_name
+
+        return output_path
