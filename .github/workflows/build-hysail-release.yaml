@@ -1,6 +1,9 @@
 name: Build HySAIL Release
 run-name: ${{ github.actor }}
-on: [push]
+on:
+  push:
+    tags:
+      - 'release-*'
 permissions:
   contents: write
 jobs:
@@ -20,8 +23,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tag_name: release
-          name: Release - release
+          tag_name: ${{ github.ref_name }}
+          name: Release - ${{ github.ref_name }}
           generate_release_notes: true
           prerelease: true
           files: |
