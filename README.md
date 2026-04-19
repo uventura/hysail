@@ -74,6 +74,32 @@ black .
 pytest
 ```
 
+## Docker
+
+A container definition is available in the project root using Ubuntu and Python 3.10.
+
+Build the image:
+
+```bash
+docker build -t hysail:local .
+```
+
+If your user does not have permission to access Docker, use:
+
+```bash
+sudo docker build -t hysail:local .
+```
+
+Run the container:
+
+```bash
+docker run --rm hysail:local
+```
+
+The image installs the package and runs the Makefile test command during the build process. When the container starts, it executes the lorem example flow automatically.
+
+> You need Docker installed on your machine to build and run the image. The Docker CLI is not required inside the Python application itself.
+
 ## CLI Usage
 
 Once the environment is activated, the same CLI commands work on Linux, macOS, and Windows.
