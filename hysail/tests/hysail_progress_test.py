@@ -1,5 +1,31 @@
 from hysail.hysail_decode import HysailDecode
+from hysail.logger.progress import advance_progress, create_progress_task
 from hysail.tests.dummy import DummyDecode, DummyProgress
+
+
+def test_when_progress_is_missing_then_create_progress_task_returns_none():
+    assert create_progress_task(None, "Decoding file", total=3) is None
+
+
+def test_when_progress_or_task_id_is_missing_then_advance_progress_does_nothing():
+    captured = {"advances": 0}
+    DummyProgress.captured = captured
+
+    advance_progress(None, "task-id")
+    advance_progress(DummyProgress(), None)
+
+    assert captured["advances"] == 0
+
+
+def test_when_progress_and_total_are_provided_then_create_progress_task_returns_id():
+    captured = {}
+    DummyProgress.captured = captured
+
+    task_id = create_progress_task(DummyProgress(), "Decoding file", total=3)
+
+    assert task_id == "task-id"
+    assert captured["description"] == "Decoding file"
+    assert captured["total"] == 3
 
 
 def test_when_decoding_runs_then_progress_bar_advances_for_each_step(

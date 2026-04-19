@@ -4,7 +4,7 @@ import numpy as np
 
 from hysail.encryption.block import Block
 from hysail.encryption.local_mac import LocalMac
-from hysail.logger.progress import get_progress
+from hysail.logger.progress import advance_progress, create_progress_task, get_progress
 import hysail.utils.galois as ga
 import hysail.utils.operators as op
 from hysail.utils.padding import add_padding
@@ -20,19 +20,17 @@ class Encode:
         self._progress = get_progress()
         self._block_size = block_size
 
-        prepare_task_id = None
-        if self._progress is not None:
-            prepare_task_id = self._progress.add_task(
-                "Preparing data for encoding", total=2
-            )
+        prepare_task_id = create_progress_task(
+            self._progress,
+            "Preparing data for encoding",
+            total=2,
+        )
 
         self._data = add_padding(data, self._block_size)
-        if prepare_task_id is not None:
-            self._progress.advance(prepare_task_id)
+        advance_progress(self._progress, prepare_task_id)
 
         self._blocks = self._split_blocks(self._data, block_size)
-        if prepare_task_id is not None:
-            self._progress.advance(prepare_task_id)
+        advance_progress(self._progress, prepare_task_id)
 
         self._polynomials = self._polynomial_set_generation()
         self._mac_blocks = self._calculate_mac_for_each_block()
@@ -65,9 +63,11 @@ class Encode:
         num_to_send = int(K * overhead)
         probabilities = op.robust_soliton_distribution(K)
 
-        task_id = None
-        if self._progress is not None:
-            task_id = self._progress.add_task("Encoding packets", total=num_to_send)
+        task_id = create_progress_task(
+            self._progress,
+            "Encoding packets",
+            total=num_to_send,
+        )
 
         for index in range(num_to_send):
             packet = self._generate_packet(index, K, probabilities)
@@ -76,8 +76,7 @@ class Encode:
                 packets[degree] = []
             packets[degree].append(packet)
 
-            if task_id is not None:
-                self._progress.advance(task_id)
+            advance_progress(self._progress, task_id)
 
         return packets
 
@@ -95,12 +94,11 @@ class Encode:
 
     def _calculate_mac_for_each_block(self):
         mac_blocks = {}
-        task_id = None
-        if self._progress is not None:
-            task_id = self._progress.add_task(
-                "Calculating MAC blocks",
-                total=len(self._blocks) * len(self._polynomials),
-            )
+        task_id = create_progress_task(
+            self._progress,
+            "Calculating MAC blocks",
+            total=len(self._blocks) * len(self._polynomials),
+        )
 
         for index, block in enumerate(self._blocks):
             representation = ga.bytes_to_poly_coeffs(block)
@@ -113,24 +111,22 @@ class Encode:
                     block_index=index,
                 )
                 mac_blocks[index].append(mac)
-                if task_id is not None:
-                    self._progress.advance(task_id)
+                advance_progress(self._progress, task_id)
 
         return mac_blocks
 
     def _polynomial_set_generation(self):
         polynomials = []
-        task_id = None
-        if self._progress is not None:
-            task_id = self._progress.add_task(
-                "Generating challenge polynomials", total=POLYNOMIAL_SET_SIZE
-            )
+        task_id = create_progress_task(
+            self._progress,
+            "Generating challenge polynomials",
+            total=POLYNOMIAL_SET_SIZE,
+        )
 
         while len(polynomials) < POLYNOMIAL_SET_SIZE:
             polynomial = ga.generate_challenge_polynomial()
             if polynomial.tolist() not in [p.tolist() for p in polynomials]:
                 polynomials.append(polynomial)
-                if task_id is not None:
-                    self._progress.advance(task_id)
+                advance_progress(self._progress, task_id)
 
         return polynomials

@@ -2,7 +2,7 @@ import pickle
 import random
 from pathlib import Path
 
-from hysail.logger.progress import get_progress
+from hysail.logger.progress import advance_progress, create_progress_task, get_progress
 from hysail.server.server import Server
 from hysail.encryption.encoding_metadata import PacketMetadata
 
@@ -33,11 +33,11 @@ class PacketSaver:
         servers = [
             Server(server_dict["storage_location"]) for server_dict in self.server_list
         ]
-        task_id = None
-        if self.progress is not None:
-            task_id = self.progress.add_task(
-                "Saving packets to server storage", total=len(self.packets)
-            )
+        task_id = create_progress_task(
+            self.progress,
+            "Saving packets to server storage",
+            total=len(self.packets),
+        )
 
         for packet in self.packets:
             self._save_single_packet(packet, servers, task_id)
@@ -64,5 +64,4 @@ class PacketSaver:
             )
         )
 
-        if task_id is not None:
-            self.progress.advance(task_id)
+        advance_progress(self.progress, task_id)
