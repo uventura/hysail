@@ -1,5 +1,6 @@
 import math
 from pathlib import Path
+from types import SimpleNamespace
 
 from hysail.constant import DEFAULT_BLOCK_SIZE_PERCENTAGE
 from hysail.hysail_decode import HysailDecode
@@ -42,7 +43,7 @@ def test_when_decoding_without_output_override_then_decoded_file_is_written(
 ):
     metadata_file = tmp_path / "payload_metadata.pkl"
     server_file = tmp_path / "servers.json"
-    metadata_file.write_bytes(b"metadata")
+    metadata_file.write_bytes(b"unused")
     server_file.write_text('{"servers": []}')
 
     DummyDecode.expected_metadata_file = str(metadata_file)
@@ -50,11 +51,15 @@ def test_when_decoding_without_output_override_then_decoded_file_is_written(
     DummyDecode.decoded_data = b"decoded-content"
 
     monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.setattr(
+        "hysail.hysail_decode.EncodingMetadata.load",
+        lambda path: SimpleNamespace(original_filename="payload.txt"),
+    )
 
     hysail_decode = HysailDecode(str(metadata_file), str(server_file))
     output_path = hysail_decode.decode()
 
-    assert output_path == tmp_path / "payload_decoded.bin"
+    assert output_path == tmp_path / "payload.txt"
     assert output_path.read_bytes() == b"decoded-content"
 
 
@@ -64,7 +69,7 @@ def test_when_output_file_is_provided_then_decode_writes_to_explicit_path(
     metadata_file = tmp_path / "payload_metadata.pkl"
     server_file = tmp_path / "servers.json"
     output_file = tmp_path / "custom" / "result.bin"
-    metadata_file.write_bytes(b"metadata")
+    metadata_file.write_bytes(b"unused")
     server_file.write_text('{"servers": []}')
 
     DummyDecode.expected_metadata_file = str(metadata_file)
@@ -72,6 +77,10 @@ def test_when_output_file_is_provided_then_decode_writes_to_explicit_path(
     DummyDecode.decoded_data = b"custom-output"
 
     monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.setattr(
+        "hysail.hysail_decode.EncodingMetadata.load",
+        lambda path: SimpleNamespace(original_filename="payload.txt"),
+    )
 
     hysail_decode = HysailDecode(str(metadata_file), str(server_file), str(output_file))
     output_path = hysail_decode.decode()
@@ -85,7 +94,7 @@ def test_when_output_file_is_dot_slash_then_decode_writes_to_current_directory(
 ):
     metadata_file = tmp_path / "payload_metadata.pkl"
     server_file = tmp_path / "servers.json"
-    metadata_file.write_bytes(b"metadata")
+    metadata_file.write_bytes(b"unused")
     server_file.write_text('{"servers": []}')
 
     DummyDecode.expected_metadata_file = str(metadata_file)
@@ -93,10 +102,75 @@ def test_when_output_file_is_dot_slash_then_decode_writes_to_current_directory(
     DummyDecode.decoded_data = b"decoded-content"
 
     monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.setattr(
+        "hysail.hysail_decode.EncodingMetadata.load",
+        lambda path: SimpleNamespace(original_filename="payload.txt"),
+    )
     monkeypatch.chdir(tmp_path)
 
     hysail_decode = HysailDecode(str(metadata_file), str(server_file), "./")
     output_path = hysail_decode.decode()
 
-    assert output_path == Path("payload_decoded.bin")
+    assert output_path == Path("payload.txt")
     assert output_path.read_bytes() == b"decoded-content"
+
+
+def test_when_metadata_has_original_filename_then_decode_uses_it_in_output_path(
+    tmp_path, monkeypatch
+):
+    metadata_file = tmp_path / "any_metadata.pkl"
+    server_file = tmp_path / "servers.json"
+    metadata_file.write_bytes(b"unused")
+    server_file.write_text('{"servers": []}')
+
+    DummyDecode.expected_metadata_file = str(metadata_file)
+    DummyDecode.expected_server_file = str(server_file)
+    DummyDecode.decoded_data = b"restored"
+
+    monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.setattr(
+        "hysail.hysail_decode.EncodingMetadata.load",
+        lambda path: SimpleNamespace(original_filename="report.pdf"),
+    )
+
+    hysail_decode = HysailDecode(str(metadata_file), str(server_file))
+
+    assert hysail_decode.decode() == tmp_path / "report.pdf"
+
+
+def test_when_metadata_lacks_original_filename_then_decode_uses_legacy_output_name(
+    tmp_path, monkeypatch
+):
+    metadata_file = tmp_path / "payload_metadata.pkl"
+    server_file = tmp_path / "servers.json"
+    metadata_file.write_bytes(b"unused")
+    server_file.write_text('{"servers": []}')
+
+    DummyDecode.expected_metadata_file = str(metadata_file)
+    DummyDecode.expected_server_file = str(server_file)
+    DummyDecode.decoded_data = b"legacy"
+
+    monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.setattr(
+        "hysail.hysail_decode.EncodingMetadata.load",
+        lambda path: SimpleNamespace(),
+    )
+
+    hysail_decode = HysailDecode(str(metadata_file), str(server_file))
+
+    assert hysail_decode.decode() == tmp_path / "payload_decoded.bin"
+
+
+def test_when_collecting_metadata_then_original_filename_is_included(tmp_path):
+    input_file = tmp_path / "report.pdf"
+    input_file.write_bytes(b"payload")
+
+    class Encoded:
+        polynomials = []
+        mac_blocks = {}
+
+    hysail_encode = HysailEncode(str(input_file))
+
+    metadata = hysail_encode._collect_metadata(Encoded(), input_file)
+
+    assert metadata.original_filename == "report.pdf"

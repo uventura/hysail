@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from hysail.encryption.decode import Decode
+from hysail.encryption.encoding_metadata import EncodingMetadata
 from hysail.logger.progress import advance_progress, create_progress_task, get_progress
 
 
@@ -37,11 +38,7 @@ class HysailDecode:
         return output_path
 
     def _determine_output_path(self, metadata_path: Path) -> Path:
-        output_stem = metadata_path.stem
-        if output_stem.endswith("_metadata"):
-            output_stem = output_stem[: -len("_metadata")]
-
-        output_name = f"{output_stem}_decoded.bin"
+        output_name = self._determine_output_name(metadata_path)
         if self.output_file is None:
             return metadata_path.with_name(output_name)
 
@@ -53,3 +50,15 @@ class HysailDecode:
             return output_path / output_name
 
         return output_path
+
+    def _determine_output_name(self, metadata_path: Path) -> str:
+        metadata = EncodingMetadata.load(metadata_path)
+        original_filename = getattr(metadata, "original_filename", "")
+        if original_filename:
+            return Path(original_filename).name
+
+        output_stem = metadata_path.stem
+        if output_stem.endswith("_metadata"):
+            output_stem = output_stem[: -len("_metadata")]
+
+        return f"{output_stem}_decoded.bin"

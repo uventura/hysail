@@ -139,6 +139,7 @@ def test_when_metadata_is_loaded_then_decode_reconstructs_runtime_objects(
             ),
         ],
         packets=[],
+        original_filename="payload.txt",
     )
     metadata.add_packet(str(server_dir), 0, 1, [0])
     metadata.add_packet(str(server_dir), 1, 1, [1])

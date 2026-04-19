@@ -32,10 +32,10 @@ class HysailEncode:
         saver = PacketSaver(packets, input_path, self.server_list)
         saver.save()
 
-        self._save_packet_metadata(encoded, saver)
+        self._save_packet_metadata(encoded, saver, input_path)
         return len(packets)
 
-    def _collect_metadata(self, encoded):
+    def _collect_metadata(self, encoded, input_path: Path):
         blocks = []
         for block_index, mac_list in encoded.mac_blocks.items():
             for local_mac in mac_list:
@@ -48,7 +48,10 @@ class HysailEncode:
                 )
 
         return EncodingMetadata(
-            polynomials=encoded.polynomials, blocks=blocks, packets=[]
+            polynomials=encoded.polynomials,
+            blocks=blocks,
+            packets=[],
+            original_filename=input_path.name,
         )
 
     def _determine_block_size(self, file_size: int) -> int:
@@ -60,8 +63,8 @@ class HysailEncode:
 
         return self.block_size
 
-    def _save_packet_metadata(self, encoded, saver):
-        metadata = self._collect_metadata(encoded)
+    def _save_packet_metadata(self, encoded, saver, input_path: Path):
+        metadata = self._collect_metadata(encoded, input_path)
 
         for packet in saver.packet_metadata:
             metadata.add_packet(
@@ -71,5 +74,7 @@ class HysailEncode:
                 indices=packet.indices,
             )
 
-        metadata_file = Path(self.metadata_output) / f"{Path(self.input_file).stem}_metadata.pkl"
+        metadata_file = (
+            Path(self.metadata_output) / f"{Path(self.input_file).stem}_metadata.pkl"
+        )
         metadata.save(metadata_file)

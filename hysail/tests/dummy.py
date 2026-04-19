@@ -68,10 +68,17 @@ class DummyHysailEncode:
     captured = None
     return_value = 0
 
-    def __init__(self, input_file_arg, block_size_arg, server_list_arg):
+    def __init__(
+        self,
+        input_file_arg,
+        block_size_arg,
+        server_list_arg,
+        metadata_output_arg,
+    ):
         self.captured["input_file"] = input_file_arg
         self.captured["block_size"] = block_size_arg
         self.captured["server_list"] = server_list_arg
+        self.captured["metadata_output"] = metadata_output_arg
 
     def encode(self):
         return self.return_value

@@ -26,6 +26,7 @@ class EncodingMetadata:
     polynomials: List[np.ndarray]
     blocks: List[BlockMetadata]
     packets: List[PacketMetadata]
+    original_filename: str = ""
 
     def add_packet(
         self, server: str, packet_index: int, degree: int, indices: List[int]
