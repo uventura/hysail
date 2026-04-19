@@ -10,6 +10,10 @@ on:
 jobs:
   build-test:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+        working-directory: ${{ github.workspace }}
 
     steps:
       - name: Check out repository code
@@ -31,15 +35,16 @@ jobs:
 
       - name: Build project environment
         run: |
-          . hysail_env/bin/activate
-          make environment
+          chmod +x ./scripts/*.sh
+          source hysail_env/bin/activate
+          ./scripts/build.sh
 
       - name: Run test suite
         run: |
-          . hysail_env/bin/activate
+          source hysail_env/bin/activate
           make test
 
       - name: Run lorem example
         run: |
-          . hysail_env/bin/activate
+          source hysail_env/bin/activate
           make lorem_example
