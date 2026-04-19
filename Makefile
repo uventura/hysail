@@ -1,4 +1,7 @@
-.PHONY: build format test clean server_storage
+.PHONY: environment build format test clean server_storage lorem_example
+
+environment:
+	. ./scripts/start.sh && ./scripts/build.sh
 
 build:
 	./scripts/build.sh
