@@ -27,4 +27,4 @@ lorem_example:
 	mkdir -p output/server_storage/server_2
 	mkdir -p output/server_storage/server_3
 	hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
-	hysail decode --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
+	hysail decode --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/

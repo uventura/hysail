@@ -91,4 +91,5 @@ def test_when_cli_encode_runs_then_hysail_encode_is_invoked(tmp_path, monkeypatc
     assert captured["input_file"] == str(input_file)
     assert captured["block_size"] is None
     assert captured["server_list"] == [{"id": 1, "storage_location": "server-1"}]
+    assert captured["metadata_output"] == "./"
     assert "Encoded 7 packets distributed to 1 servers" in result.output

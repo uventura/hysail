@@ -1,3 +1,5 @@
+from types import SimpleNamespace
+
 from hysail.hysail_decode import HysailDecode
 from hysail.logger.progress import advance_progress, create_progress_task
 from hysail.tests.dummy import DummyDecode, DummyProgress
@@ -33,7 +35,7 @@ def test_when_decoding_runs_then_progress_bar_advances_for_each_step(
 ):
     metadata_file = tmp_path / "payload_metadata.pkl"
     server_file = tmp_path / "servers.json"
-    metadata_file.write_bytes(b"metadata")
+    metadata_file.write_bytes(b"unused")
     server_file.write_text('{"servers": []}')
 
     captured = {"advances": 0}
@@ -44,6 +46,10 @@ def test_when_decoding_runs_then_progress_bar_advances_for_each_step(
     DummyDecode.decoded_data = b"progress-output"
 
     monkeypatch.setattr("hysail.hysail_decode.Decode", DummyDecode)
+    monkeypatch.setattr(
+        "hysail.hysail_decode.EncodingMetadata.load",
+        lambda path: SimpleNamespace(original_filename="payload.txt"),
+    )
     monkeypatch.setattr("hysail.hysail_decode.get_progress", lambda: DummyProgress())
 
     hysail_decode = HysailDecode(str(metadata_file), str(server_file))
