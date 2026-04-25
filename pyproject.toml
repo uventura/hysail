@@ -40,6 +40,7 @@ dependencies = [
     "numpy==2.2.6",
     "click",
     "rich",
+    "timeit-decorator",
 ]
 
 [project.scripts]
