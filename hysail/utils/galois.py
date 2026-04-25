@@ -24,7 +24,7 @@ def _int_to_poly_coeffs(value, width):
 
     return np.array([(value >> index) & 1 for index in range(width)], dtype=np.uint8)
 
-
+@timeit(runs=5)
 def gf2_poly_mod(m_coeffs, p_coeffs):
     """
     Performs polynomial division m(x) % p(x) over GF(2).
@@ -52,6 +52,7 @@ def gf2_poly_mod(m_coeffs, p_coeffs):
     return _int_to_poly_coeffs(current_dividend, remainder_width)
 
 
+@timeit(runs=5)
 def generate_challenge_polynomial(degree=POLYNOMIAL_LAMBDA):
     """
     Generates a random polynomial to serve as a challenge P_j(x).
