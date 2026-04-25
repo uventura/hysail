@@ -10,28 +10,46 @@ def bytes_to_poly_coeffs(message_block):
     return bits[::-1].astype(int)
 
 
-@timeit(runs=5)
+def _poly_coeffs_to_int(coeffs):
+    value = 0
+    for index, coeff in enumerate(coeffs):
+        if int(coeff):
+            value |= 1 << index
+    return value
+
+
+def _int_to_poly_coeffs(value, width):
+    if width <= 0:
+        return np.array([], dtype=np.uint8)
+
+    return np.array([(value >> index) & 1 for index in range(width)], dtype=np.uint8)
+
+
 def gf2_poly_mod(m_coeffs, p_coeffs):
     """
     Performs polynomial division m(x) % p(x) over GF(2).
     In GF(2), addition and subtraction are both XOR.
     """
-    m = list(m_coeffs)
-    p = list(p_coeffs)
-    # print(f"M: {m}; P: {p}")
+    dividend_coeffs = list(m_coeffs)
+    divisor_coeffs = list(p_coeffs)
 
-    while p and p[-1] == 0:
-        p.pop()
+    while divisor_coeffs and divisor_coeffs[-1] == 0:
+        divisor_coeffs.pop()
 
-    if not p:
+    if not divisor_coeffs:
         raise ZeroDivisionError("Division by zero polynomial.")
 
-    while len(m) >= len(p):
-        if m[-1] == 1:
-            for i in range(len(p)):
-                m[len(m) - len(p) + i] ^= p[i]
-        m.pop()
-    return np.array(m)
+    dividend = _poly_coeffs_to_int(dividend_coeffs)
+    divisor = _poly_coeffs_to_int(divisor_coeffs)
+    divisor_degree = divisor.bit_length() - 1
+    current_dividend = dividend
+
+    while current_dividend.bit_length() > divisor_degree:
+        shift = current_dividend.bit_length() - divisor.bit_length()
+        current_dividend ^= divisor << shift
+
+    remainder_width = min(len(dividend_coeffs), len(divisor_coeffs) - 1)
+    return _int_to_poly_coeffs(current_dividend, remainder_width)
 
 
 def generate_challenge_polynomial(degree=POLYNOMIAL_LAMBDA):
