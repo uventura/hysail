@@ -2,16 +2,15 @@ import os
 import time
 import functools
 
-from hysail.logger.execution_logger import execution_logger
-
-ENABLE_TIMING = os.getenv("DEBUG_TIME", "0").lower() in ("1", "true", "on")
+from hysail.logger.logger import execution_logger
+from hysail.utils.debug import is_debugging
 
 
 def timeit(runs=1, detailed=False):
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
-            if not ENABLE_TIMING:
+            if not is_debugging():
                 return func(*args, **kwargs)
 
             times = []

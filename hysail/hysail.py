@@ -1,4 +1,5 @@
 import json
+import os
 
 import click
 from rich.progress import (
@@ -13,7 +14,7 @@ from rich.progress import (
 from hysail.hysail_decode import HysailDecode
 from hysail.hysail_encode import HysailEncode
 from hysail.logger.progress import set_progress
-
+from hysail.utils.debug import set_debugging
 
 def _create_progress() -> Progress:
     return Progress(
@@ -24,6 +25,10 @@ def _create_progress() -> Progress:
         TimeElapsedColumn(),
         TimeRemainingColumn(),
     )
+
+def _define_debug_time_flag(debug_time):
+    if debug_time:
+        set_debugging(True)
 
 
 @click.group()
@@ -52,10 +57,17 @@ def main():
     show_default=True,
     help="Path where the metadata file will be written",
 )
-def encode_command(input_file, block_size, server_list, metadata_output):
+@click.option(
+    "--debug-time",
+    is_flag=True,
+    help="Enable timing of key operations for performance analysis (also set DEBUG_TIME env var)",
+)
+def encode_command(input_file, block_size, server_list, metadata_output, debug_time):
     with open(server_list, "r") as f:
         data = json.load(f)
     servers = data["servers"]
+
+    _define_debug_time_flag(debug_time)
 
     with _create_progress() as progress:
         set_progress(progress)
@@ -81,7 +93,14 @@ def encode_command(input_file, block_size, server_list, metadata_output):
     show_default=True,
     help="Path where the decoded file will be written",
 )
-def decode_command(metadata_file, server_file, output_file):
+@click.option(
+    "--debug-time",
+    is_flag=True,
+    help="Enable timing of key operations for performance analysis (also set DEBUG_TIME env var)",
+)
+def decode_command(metadata_file, server_file, output_file, debug_time):
+    _define_debug_time_flag(debug_time)
+
     with _create_progress() as progress:
         set_progress(progress)
         hysail_decode = HysailDecode(metadata_file, server_file, output_file)

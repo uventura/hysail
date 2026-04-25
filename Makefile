@@ -39,6 +39,5 @@ lorem_example_debug_time:
 	mkdir -p output/server_storage/server_1
 	mkdir -p output/server_storage/server_2
 	mkdir -p output/server_storage/server_3
-	export DEBUG_TIME=true &&
-	hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
-	hysail decode --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
+	hysail encode --debug-time --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
+	hysail decode --debug-time --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
