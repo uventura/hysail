@@ -2,7 +2,7 @@ import numpy as np
 import secrets
 
 from hysail.constant import POLYNOMIAL_LAMBDA
-
+from hysail.utils.decorators import timeit
 
 def bytes_to_poly_coeffs(message_block):
     bits = np.unpackbits(np.frombuffer(message_block, dtype=np.uint8))
@@ -10,6 +10,7 @@ def bytes_to_poly_coeffs(message_block):
     return bits[::-1].astype(int)
 
 
+@timeit(runs=5)
 def gf2_poly_mod(m_coeffs, p_coeffs):
     """
     Performs polynomial division m(x) % p(x) over GF(2).
