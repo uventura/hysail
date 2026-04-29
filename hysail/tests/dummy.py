@@ -82,3 +82,17 @@ class DummyHysailEncode:
 
     def encode(self):
         return self.return_value
+
+
+class DummyHysailChainPublisher:
+    captured = None
+    return_value = None
+
+    def __init__(self, rpc_url_arg, contract_address_arg, private_key_arg):
+        self.captured["rpc_url"] = rpc_url_arg
+        self.captured["contract_address"] = contract_address_arg
+        self.captured["private_key"] = private_key_arg
+
+    def publish_manifest(self, manifest_arg):
+        self.captured["manifest"] = manifest_arg
+        return self.return_value

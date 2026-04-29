@@ -11,7 +11,7 @@ This folder introduces a runnable local DApp example following the proposed stru
 Recommended runtime:
 
 1. Node 18 or newer.
-2. The current workspace has Node 16 available, and the sample still compiles and runs locally with a Hardhat warning.
+2. Warning: The current workspace has Node 16 available, and the sample still compiles and runs locally with a Hardhat warning.
 3. Python uses the existing project virtual environment.
 
 ## Structure
@@ -95,7 +95,7 @@ The reconstructed file is written to output/reconstructed_sample.txt.
 
 ## Notes
 
-1. The browser uses a development-only private key that matches the standard local Hardhat mnemonic.
+1. Warning: The browser uses a development-only private key that matches the standard local Hardhat mnemonic.
 2. This is only for local demonstration.
 3. The on-chain example is intentionally small: one file, one provider, one block.
 4. The off-chain reconstruction is also intentionally small: it fetches one block, validates its SHA-256 hash, and writes the final file.

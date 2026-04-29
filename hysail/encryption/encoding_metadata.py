@@ -27,6 +27,8 @@ class EncodingMetadata:
     blocks: List[BlockMetadata]
     packets: List[PacketMetadata]
     original_filename: str = ""
+    original_file_hash: str = ""
+    packet_root_hash: str = ""
 
     def add_packet(
         self, server: str, packet_index: int, degree: int, indices: List[int]
@@ -40,4 +42,13 @@ class EncodingMetadata:
     @classmethod
     def load(cls, file_path: Path) -> "EncodingMetadata":
         with open(file_path, "rb") as f:
-            return pickle.load(f)
+            metadata = pickle.load(f)
+
+        if not hasattr(metadata, "original_filename"):
+            metadata.original_filename = ""
+        if not hasattr(metadata, "original_file_hash"):
+            metadata.original_file_hash = ""
+        if not hasattr(metadata, "packet_root_hash"):
+            metadata.packet_root_hash = ""
+
+        return metadata

@@ -1,0 +1,115 @@
+{
+  "_format": "hh-sol-cache-2",
+  "files": {
+    "/home/ualtu/dev/git/hysail/dapp/contracts/contracts/DownloadManager.sol": {
+      "lastModificationDate": 1777503996741,
+      "contentHash": "e07d532c2f00485f39163cfc45d42676",
+      "sourceName": "contracts/DownloadManager.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "DownloadManager",
+        "IFileRegistry",
+        "IProviderRegistry"
+      ]
+    },
+    "/home/ualtu/dev/git/hysail/dapp/contracts/contracts/FileRegistry.sol": {
+      "lastModificationDate": 1777503996737,
+      "contentHash": "44a2a52a7f7e64876f7a3721198e28ce",
+      "sourceName": "contracts/FileRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "FileRegistry"
+      ]
+    },
+    "/home/ualtu/dev/git/hysail/dapp/contracts/contracts/ProviderRegistry.sol": {
+      "lastModificationDate": 1777503996740,
+      "contentHash": "50b2824eaf4727b14199c9664075bf5b",
+      "sourceName": "contracts/ProviderRegistry.sol",
+      "solcConfig": {
+        "version": "0.8.20",
+        "settings": {
+          "evmVersion": "paris",
+          "optimizer": {
+            "enabled": false,
+            "runs": 200
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        "^0.8.20"
+      ],
+      "artifacts": [
+        "ProviderRegistry"
+      ]
+    }
+  }
+}
