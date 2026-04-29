@@ -1,0 +1,10 @@
+{
+  "fileId": "sample-file",
+  "metadataUri": "http://127.0.0.1:8000/manifest",
+  "providerEndpoint": "http://127.0.0.1:8000",
+  "blockId": "sample-block-1",
+  "blockHash": "07f9574ef2c8f91b54182c3e31eb23d948ab41924968c37b345d10d23ce8efe2",
+  "originalFileHash": "07f9574ef2c8f91b54182c3e31eb23d948ab41924968c37b345d10d23ce8efe2",
+  "samplePriceWei": "1000000000000000",
+  "outputFileName": "reconstructed_sample.txt"
+}
