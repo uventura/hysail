@@ -10,7 +10,7 @@ def bytes_to_poly_coeffs(message_block):
     return bits[::-1].astype(int)
 
 
-@timeit(runs=5)
+@timeit(runs=6)
 def gf2_poly_mod(m_coeffs, p_coeffs):
     """
     Performs polynomial division m(x) % p(x) over GF(2).
