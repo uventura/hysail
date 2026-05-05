@@ -1,9 +1,15 @@
+import hashlib
+import json
 import math
 from pathlib import Path
 
 from hysail.constant import DEFAULT_BLOCK_SIZE_PERCENTAGE
 from hysail.encryption.encode import Encode
-from hysail.encryption.encoding_metadata import BlockMetadata, EncodingMetadata
+from hysail.encryption.encoding_metadata import (
+    BlockMetadata,
+    EncodingMetadata,
+    PacketMetadata,
+)
 from hysail.server.packet_saver import PacketSaver
 
 
@@ -32,10 +38,10 @@ class HysailEncode:
         saver = PacketSaver(packets, input_path, self.server_list)
         saver.save()
 
-        self._save_packet_metadata(encoded, saver, input_path)
+        self._save_packet_metadata(encoded, saver, input_path, data)
         return len(packets)
 
-    def _collect_metadata(self, encoded, input_path: Path):
+    def _collect_metadata(self, encoded, input_path: Path, data: bytes = b""):
         blocks = []
         for block_index, mac_list in encoded.mac_blocks.items():
             for local_mac in mac_list:
@@ -52,6 +58,7 @@ class HysailEncode:
             blocks=blocks,
             packets=[],
             original_filename=input_path.name,
+            original_file_hash=self._sha256_hex(data) if data else "",
         )
 
     def _determine_block_size(self, file_size: int) -> int:
@@ -63,8 +70,8 @@ class HysailEncode:
 
         return self.block_size
 
-    def _save_packet_metadata(self, encoded, saver, input_path: Path):
-        metadata = self._collect_metadata(encoded, input_path)
+    def _save_packet_metadata(self, encoded, saver, input_path: Path, data: bytes):
+        metadata = self._collect_metadata(encoded, input_path, data)
 
         for packet in saver.packet_metadata:
             metadata.add_packet(
@@ -74,7 +81,25 @@ class HysailEncode:
                 indices=packet.indices,
             )
 
+        metadata.packet_root_hash = self._compute_packet_root(metadata.packets)
+
         metadata_file = (
             Path(self.metadata_output) / f"{Path(self.input_file).stem}_metadata.pkl"
         )
         metadata.save(metadata_file)
+
+    def _compute_packet_root(self, packets: list[PacketMetadata]) -> str:
+        serialized_packets = [
+            {
+                "server": packet.server,
+                "packet_index": packet.packet_index,
+                "degree": packet.degree,
+                "indices": packet.indices,
+            }
+            for packet in sorted(packets, key=lambda item: item.packet_index)
+        ]
+        payload = json.dumps(serialized_packets, sort_keys=True).encode("utf-8")
+        return self._sha256_hex(payload)
+
+    def _sha256_hex(self, payload: bytes) -> str:
+        return hashlib.sha256(payload).hexdigest()

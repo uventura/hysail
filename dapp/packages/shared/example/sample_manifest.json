@@ -1,0 +1,33 @@
+{
+  "fileId": "sample-file",
+  "metadataUri": "http://127.0.0.1:8000/manifest",
+  "providerEndpoint": "http://127.0.0.1:8000",
+  "providerAddress": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+  "blockId": "sample-block-1",
+  "blockHash": "07f9574ef2c8f91b54182c3e31eb23d948ab41924968c37b345d10d23ce8efe2",
+  "originalFileHash": "07f9574ef2c8f91b54182c3e31eb23d948ab41924968c37b345d10d23ce8efe2",
+  "samplePriceWei": "1000000000000000",
+  "outputFileName": "reconstructed_sample.txt",
+  "packets": [
+    {
+      "blockId": "sample-block-1",
+      "packetIndex": 0,
+      "degree": 1,
+      "indices": [0],
+      "priceWei": "1000000000000000"
+    }
+  ],
+  "challengePolynomials": [
+    [1, 1],
+    [1, 0, 1]
+  ],
+  "blockMacs": [
+    {
+      "blockIndex": 0,
+      "macs": [
+        [0],
+        [1, 1]
+      ]
+    }
+  ]
+}
