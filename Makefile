@@ -1,4 +1,4 @@
-.PHONY: environment build format test clean server_storage lorem_example dapp_publish_example
+.PHONY: environment build format test clean dapp_clean server_storage lorem_example dapp_publish_example
 
 environment:
 	. ./scripts/start.sh && ./scripts/build.sh
@@ -16,6 +16,13 @@ test:
 clean:
 	rm -rf output/*
 	rm -rf logs/*
+	$(MAKE) dapp_clean
+
+dapp_clean:
+	rm -rf dapp/contracts/artifacts/*
+	rm -rf dapp/contracts/cache/*
+	rm -rf dapp/apps/web/src/generated/*
+	rm -f dapp/packages/shared/deployments/*.json
 
 server_storage:
 	mkdir -p output/server_storage/server_1

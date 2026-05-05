@@ -29,13 +29,11 @@ app.innerHTML = `
     <section class="grid">
       <article class="card">
         <h2>Chain</h2>
-        <p>Use the buttons in order after running the local node and deploy script.</p>
+        <p>Use the buttons in order after running the local node and deploy script. The reconstructor validates blocks off-chain before settlement.</p>
         <button id="refresh">Refresh counters</button>
         <button id="register-file" class="secondary">Register sample file</button>
         <button id="register-provider" class="secondary">Register provider</button>
         <button id="request-job" class="accent">Request download job</button>
-        <button id="accept-block">Accept sample block</button>
-        <button id="finalize-job">Finalize latest job</button>
         <div class="kpis">
           <div class="kpi"><span>Files</span><strong id="files">0</strong></div>
           <div class="kpi"><span>Providers</span><strong id="providers">0</strong></div>
@@ -62,7 +60,6 @@ app.innerHTML = `
 const provider = new ethers.JsonRpcProvider(RPC_URL);
 const wallet = new ethers.Wallet(DEV_PRIVATE_KEY, provider);
 const fileId = ethers.id(sampleManifest.fileId);
-const blockId = ethers.id(sampleManifest.blockId);
 const manifestHash = ethers.id(JSON.stringify(sampleManifest));
 const blockRoot = ethers.id(sampleManifest.blockHash);
 const fileHash = `0x${sampleManifest.originalFileHash}`;
@@ -154,41 +151,13 @@ async function requestJob() {
   await sendTransaction("Request job", () =>
     downloadManager.requestDownload(fileId, { value: JOB_BUDGET_WEI })
   );
-}
 
-async function acceptBlock() {
-  const { downloadManager } = getContracts();
-  const jobCount = await downloadManager.jobCount();
-  if (jobCount === 0n) {
-    throw new Error("No job available. Request a job first.");
-  }
-
-  await sendTransaction("Accept block", () =>
-    downloadManager.acceptBlock(jobCount, blockId, BigInt(sampleManifest.samplePriceWei))
-  );
-}
-
-async function finalizeJob() {
-  const { downloadManager } = getContracts();
-  const jobCount = await downloadManager.jobCount();
-  if (jobCount === 0n) {
-    throw new Error("No job available. Request a job first.");
-  }
-
-  await sendTransaction("Finalize job", () =>
-    downloadManager.finalizeJob(jobCount, fileHash)
-  );
+  writeLog("Run the reconstructor service to validate the packet, pay the provider, and finalize or reject the job.");
 }
 
 document.querySelector("#refresh").addEventListener("click", refreshCounters);
 document.querySelector("#register-file").addEventListener("click", registerFile);
 document.querySelector("#register-provider").addEventListener("click", registerProvider);
 document.querySelector("#request-job").addEventListener("click", requestJob);
-document.querySelector("#accept-block").addEventListener("click", () =>
-  acceptBlock().catch((error) => writeLog(`Accept block: ${error.message}`))
-);
-document.querySelector("#finalize-job").addEventListener("click", () =>
-  finalizeJob().catch((error) => writeLog(`Finalize job: ${error.message}`))
-);
 
 refreshCounters();

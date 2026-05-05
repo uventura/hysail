@@ -33,8 +33,8 @@ Recommended runtime:
 4. Start the web app.
 5. Register the sample file and provider in the browser.
 6. Request a sample download job.
-7. Accept the sample block and finalize the job.
-8. Run the reconstructor to rebuild the file off-chain.
+7. Run the reconstructor to challenge the provider, download the block only if it is consistent, and settle the job.
+8. If the consistency check fails, the reconstructor rejects the job and refunds the requester instead of paying the provider.
 
 ## Commands
 
@@ -91,6 +91,12 @@ After requesting a job in the browser:
 /home/ualtu/dev/git/hysail/hysail_env/bin/python dapp/services/reconstructor/main.py
 ```
 
+The reconstructor now performs three steps:
+
+1. Challenges the provider using the HySail-style consistency check before downloading the block.
+2. Downloads and hashes the block only if the challenge matches the manifest MACs.
+3. Accepts and finalizes the job on-chain, or rejects it with a refund if validation fails.
+
 The reconstructed file is written to output/reconstructed_sample.txt.
 
 ## Notes
@@ -98,4 +104,4 @@ The reconstructed file is written to output/reconstructed_sample.txt.
 1. Warning: The browser uses a development-only private key that matches the standard local Hardhat mnemonic.
 2. This is only for local demonstration.
 3. The on-chain example is intentionally small: one file, one provider, one block.
-4. The off-chain reconstruction is also intentionally small: it fetches one block, validates its SHA-256 hash, and writes the final file.
+4. The off-chain reconstruction now validates a challenge response before downloading and only settles the chain after the payload hash matches.

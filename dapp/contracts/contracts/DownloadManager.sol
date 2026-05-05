@@ -29,6 +29,7 @@ contract DownloadManager {
     event DownloadRequested(uint256 indexed jobId, bytes32 indexed fileId, address indexed requester, uint256 budget);
     event BlockAccepted(uint256 indexed jobId, bytes32 indexed blockId, address indexed provider, uint256 priceWei);
     event JobFinalized(uint256 indexed jobId, bytes32 resultHash, uint256 refundWei);
+    event JobRejected(uint256 indexed jobId, uint256 refundWei);
 
     constructor(address fileRegistryAddress, address providerRegistryAddress) {
         fileRegistry = IFileRegistry(fileRegistryAddress);
@@ -52,22 +53,23 @@ contract DownloadManager {
         emit DownloadRequested(jobCount, fileId, msg.sender, msg.value);
     }
 
-    function acceptBlock(uint256 jobId, bytes32 blockId, uint256 priceWei) external {
+    function acceptBlock(uint256 jobId, bytes32 blockId, address provider, uint256 priceWei) external {
         Job storage job = jobs[jobId];
 
         require(job.requester != address(0), "unknown job");
         require(!job.finalized, "job finalized");
-        require(providerRegistry.isProviderActive(msg.sender), "inactive provider");
+        require(msg.sender == job.requester, "only requester");
+        require(providerRegistry.isProviderActive(provider), "inactive provider");
         require(!claimedBlocks[jobId][blockId], "block already claimed");
         require(job.spent + priceWei <= job.budget, "insufficient budget");
 
         claimedBlocks[jobId][blockId] = true;
         job.spent += priceWei;
 
-        (bool paid, ) = payable(msg.sender).call{value: priceWei}("");
+        (bool paid, ) = payable(provider).call{value: priceWei}("");
         require(paid, "provider payment failed");
 
-        emit BlockAccepted(jobId, blockId, msg.sender, priceWei);
+        emit BlockAccepted(jobId, blockId, provider, priceWei);
     }
 
     function finalizeJob(uint256 jobId, bytes32 resultHash) external {
@@ -80,12 +82,30 @@ contract DownloadManager {
         job.finalized = true;
         job.resultHash = resultHash;
 
-        uint256 refund = job.budget - job.spent;
+        uint256 refund = _refundRemainingBudget(job);
+
+        emit JobFinalized(jobId, resultHash, refund);
+    }
+
+    function rejectJob(uint256 jobId) external {
+        Job storage job = jobs[jobId];
+
+        require(job.requester != address(0), "unknown job");
+        require(!job.finalized, "job finalized");
+        require(msg.sender == job.requester, "only requester");
+
+        job.finalized = true;
+
+        uint256 refund = _refundRemainingBudget(job);
+
+        emit JobRejected(jobId, refund);
+    }
+
+    function _refundRemainingBudget(Job storage job) private returns (uint256 refund) {
+        refund = job.budget - job.spent;
         if (refund > 0) {
             (bool paid, ) = payable(job.requester).call{value: refund}("");
             require(paid, "refund failed");
         }
-
-        emit JobFinalized(jobId, resultHash, refund);
     }
 }

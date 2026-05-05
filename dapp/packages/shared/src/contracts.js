@@ -10,7 +10,9 @@ export const PROVIDER_REGISTRY_ABI = [
 
 export const DOWNLOAD_MANAGER_ABI = [
   "function requestDownload(bytes32 fileId) payable",
-  "function acceptBlock(uint256 jobId, bytes32 blockId, uint256 priceWei)",
+  "function acceptBlock(uint256 jobId, bytes32 blockId, address provider, uint256 priceWei)",
   "function finalizeJob(uint256 jobId, bytes32 resultHash)",
+  "function rejectJob(uint256 jobId)",
+  "function jobs(uint256 jobId) view returns (bytes32 fileId, address requester, uint256 budget, uint256 spent, bytes32 resultHash, bool finalized)",
   "function jobCount() view returns (uint256)"
 ];
