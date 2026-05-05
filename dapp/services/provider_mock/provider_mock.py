@@ -7,6 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
+from hysail.logger.logger import execution_logger
 from hysail.utils.galois import bytes_to_poly_coeffs, gf2_poly_mod
 
 BASE_DIR = Path(__file__).resolve().parents[2]
@@ -33,7 +34,7 @@ class ProviderMockServer:
         server = ThreadingHTTPServer(
             (self.config.host, self.config.port), self._create_handler()
         )
-        print(
+        execution_logger.info(
             f"Provider mock listening on http://{self.config.host}:{self.config.port}"
         )
         server.serve_forever()
