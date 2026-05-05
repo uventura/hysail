@@ -4,8 +4,8 @@ This folder introduces a runnable local DApp example following the proposed stru
 
 - contracts: local smart contracts with a minimal file registry, provider registry, and download manager
 - apps/web: browser UI for the sample flow
-- services/provider_mock: HTTP provider serving one sample block
-- services/reconstructor: off-chain reconstruction script
+- services/provider_mock: HTTP provider serving one sample block, with main.py as the entrypoint and provider_mock.py holding the service logic
+- services/reconstructor: off-chain reconstruction flow, with main.py as the entrypoint and reconstructor.py holding the service logic
 - packages/shared: shared sample manifest, block, contract metadata, and deployment output
 
 Recommended runtime:
