@@ -20,6 +20,7 @@ class BasicLogger:
         self.logger.setLevel(logging.DEBUG)
 
         log_file = self._prepare_log_file(log_file)
+        self.log_file = log_file
         self.logger.handlers.clear()
 
         self._setup_console_handler(console_handler_level)
@@ -72,6 +73,9 @@ class BasicLogger:
             if isinstance(handler, logging.FileHandler):
                 handler.close()
                 os.remove(handler.baseFilename)
+
+    def get_log_directory(self) -> str:
+        return os.path.dirname(os.path.abspath(self.log_file))
 
     def _formatter(self):
         return logging.Formatter(
