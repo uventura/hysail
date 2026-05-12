@@ -116,7 +116,8 @@ Optional arguments:
 
 - `--block-size`: sets the encoding block size;
 - `--server-list`: path to the JSON file that defines the target servers;
-- `--metadata-output`: folder where the metadata file will be saved.
+- `--metadata-output`: folder where the metadata file will be saved;
+- `--debug`: enables debug mode with detailed execution logs and timing instrumentation.
 
 ### Decode a File
 
@@ -127,7 +128,8 @@ hysail decode --server-file examples/server_list_example.json output/lorem_ipsum
 Optional arguments:
 
 - `--server-file`: JSON file with the server information required for reconstruction;
-- `--output-file`: destination folder for the recovered file.
+- `--output-file`: destination folder for the recovered file;
+- `--debug`: enables debug mode with detailed execution logs and timing instrumentation.
 
 ### Publish Metadata to the Chain
 

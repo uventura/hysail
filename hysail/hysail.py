@@ -31,8 +31,8 @@ def _create_progress() -> Progress:
     )
 
 
-def _define_debug_time_flag(debug_time):
-    if debug_time:
+def _enable_debug_mode(debug):
+    if debug:
         set_debugging(True)
 
 
@@ -63,16 +63,16 @@ def main():
     help="Path where the metadata file will be written",
 )
 @click.option(
-    "--debug-time",
+    "--debug",
     is_flag=True,
-    help="Enable timing of key operations for performance analysis (also set DEBUG_TIME env var)",
+    help="Enable debug mode with detailed execution logs and timing instrumentation",
 )
-def encode_command(input_file, block_size, server_list, metadata_output, debug_time):
+def encode_command(input_file, block_size, server_list, metadata_output, debug):
     with open(server_list, "r") as f:
         data = json.load(f)
     servers = data["servers"]
 
-    _define_debug_time_flag(debug_time)
+    _enable_debug_mode(debug)
 
     with _create_progress() as progress:
         set_progress(progress)
@@ -99,12 +99,12 @@ def encode_command(input_file, block_size, server_list, metadata_output, debug_t
     help="Path where the decoded file will be written",
 )
 @click.option(
-    "--debug-time",
+    "--debug",
     is_flag=True,
-    help="Enable timing of key operations for performance analysis (also set DEBUG_TIME env var)",
+    help="Enable debug mode with detailed execution logs and timing instrumentation",
 )
-def decode_command(metadata_file, server_file, output_file, debug_time):
-    _define_debug_time_flag(debug_time)
+def decode_command(metadata_file, server_file, output_file, debug):
+    _enable_debug_mode(debug)
 
     with _create_progress() as progress:
         set_progress(progress)

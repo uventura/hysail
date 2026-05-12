@@ -4,6 +4,7 @@ from types import SimpleNamespace
 from click.testing import CliRunner
 
 from hysail.hysail import main
+from hysail.utils.debug import is_debugging, set_debugging
 from hysail.tests.dummy import (
     DummyHysailChainPublisher,
     DummyHysailDecode,
@@ -100,6 +101,74 @@ def test_when_cli_encode_runs_then_hysail_encode_is_invoked(tmp_path, monkeypatc
     assert captured["server_list"] == [{"id": 1, "storage_location": "server-1"}]
     assert captured["metadata_output"] == "./"
     assert "Encoded 7 packets distributed to 1 servers" in result.output
+
+
+def test_when_cli_encode_receives_debug_flag_then_debug_mode_is_enabled(
+    tmp_path, monkeypatch
+):
+    input_file = tmp_path / "payload.txt"
+    server_list_file = tmp_path / "servers.json"
+    input_file.write_bytes(b"payload")
+    server_list_file.write_text(
+        '{"servers": [{"id": 1, "storage_location": "server-1"}]}'
+    )
+
+    captured = {}
+
+    DummyHysailEncode.captured = captured
+    DummyHysailEncode.return_value = 1
+    set_debugging(False)
+
+    monkeypatch.setattr("hysail.hysail.HysailEncode", DummyHysailEncode)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "encode",
+            str(input_file),
+            "--server-list",
+            str(server_list_file),
+            "--debug",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert is_debugging() is True
+    set_debugging(False)
+
+
+def test_when_cli_decode_receives_debug_flag_then_debug_mode_is_enabled(
+    tmp_path, monkeypatch
+):
+    metadata_file = tmp_path / "payload_metadata.pkl"
+    server_file = tmp_path / "servers.json"
+    metadata_file.write_bytes(b"metadata")
+    server_file.write_text('{"servers": []}')
+
+    captured = {}
+
+    DummyHysailDecode.captured = captured
+    DummyHysailDecode.return_path = tmp_path / "payload_decoded.bin"
+    set_debugging(False)
+
+    monkeypatch.setattr("hysail.hysail.HysailDecode", DummyHysailDecode)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        [
+            "decode",
+            str(metadata_file),
+            "--server-file",
+            str(server_file),
+            "--debug",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert is_debugging() is True
+    set_debugging(False)
 
 
 def test_when_cli_publish_runs_then_manifest_is_sent_to_chain(tmp_path, monkeypatch):

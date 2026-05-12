@@ -1,4 +1,4 @@
-.PHONY: environment build format test clean dapp_clean server_storage lorem_example dapp_publish_example
+.PHONY: environment build format test clean dapp_clean server_storage lorem_example lorem_example_debug dapp_publish_example
 
 environment:
 	. ./scripts/start.sh && ./scripts/build.sh
@@ -39,15 +39,15 @@ lorem_example:
 	hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
 	hysail decode --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/
 
-lorem_example_debug_time:
+lorem_example_debug:
 	rm -rf output/*
 	rm -rf logs/*
 	./scripts/build.sh
 	mkdir -p output/server_storage/server_1
 	mkdir -p output/server_storage/server_2
 	mkdir -p output/server_storage/server_3
-	hysail encode --debug-time --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
-	hysail decode --debug-time --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
+	hysail encode --debug --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
+	hysail decode --debug --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
 
 dapp_publish_example:
 	./scripts/build.sh
