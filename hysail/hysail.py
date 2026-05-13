@@ -65,6 +65,7 @@ def main():
 @click.option(
     "--debug",
     is_flag=True,
+    default=False,
     help="Enable debug mode with detailed execution logs and timing instrumentation",
 )
 def encode_command(input_file, block_size, server_list, metadata_output, debug):
