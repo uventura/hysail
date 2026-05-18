@@ -1,0 +1,53 @@
+\section{Corpos finitos e corpo de Galois}%
+O corpo de Galois é a estrutura algébrica que torna possível tratar blocos binários como objetos matemáticos manipuláveis por operações bem definidas. No contexto do HySail, o interesse se concentra em $GF(2)$ e em extensões do tipo $GF(2^n)$. Em $GF(2)$, cada coeficiente pode assumir apenas os valores 0 ou 1, e a soma coincide com a operação XOR. Essa característica simplifica o raciocínio algébrico e aproxima a teoria da representação prática dos dados em memória.
+
+Essa formulação é importante porque o HySail não autentica um bloco apenas como sequência de bytes. O protocolo interpreta o bloco como um polinômio e, a partir dessa interpretação, calcula um resto que funciona como autenticador compacto~\cite{amaral2013hysail}. Sem essa passagem para o domínio polinomial, a etapa de auditoria descrita no próximo capítulo ficaria desconectada da estrutura matemática que a sustenta.
+
+\subsection{Exemplo de representação polinomial}%
+Considere o vetor binário 1011. Adotando a convenção usada pelo projeto, em que a primeira posição do vetor representa o termo constante, o bloco é lido em três passos:
+
+\begin{enumerate}
+	\item o primeiro coeficiente vale 1 e representa $1$;
+	\item o segundo coeficiente vale 0 e representa $0x$;
+	\item os coeficientes seguintes valem 1 e 1, representando $x^2$ e $x^3$.
+\end{enumerate}
+
+Assim, o bloco passa a ser escrito como $1 + x^2 + x^3$. Esse tipo de exemplo é o que efetivamente interessa ao HySail, pois mostra como um bloco armazenado pode ser reescrito em uma forma compatível com divisão polinomial e com o cálculo de MACs homomórficos.
+
+\section[Divisão polinomial em GF(2)]{Divisão polinomial em $GF(2)$}%
+A divisão polinomial em $GF(2)$ segue a mesma lógica estrutural da divisão longa entre inteiros, mas com uma diferença importante: como os coeficientes pertencem a um corpo binário, subtração e soma são equivalentes a XOR. Dado um dividendo $m(x)$ e um divisor $p(x)$, procura-se obter um quociente $q(x)$ e um resto $r(x)$ tais que
+
+$$
+m(x) = q(x) \cdot p(x) + r(x),
+$$
+
+com $\deg(r) < \deg(p)$. No HySail, é justamente esse resto que funciona como autenticador compacto de um bloco.
+
+Do ponto de vista do protocolo, o restante da divisão não é apenas um subproduto algébrico. Ele serve como síntese verificável do bloco diante de um polinômio de desafio. Como a operação é realizada em um corpo finito no qual XOR preserva a estrutura necessária, o sistema pode explorar uma propriedade homomórfica útil durante a auditoria: a combinação de blocos por XOR é compatível com a combinação dos autenticadores produzidos pelo mesmo polinômio de desafio~\cite{amaral2013hysail}.
+
+\subsection{Exemplo de divisão em três passos}%
+Seja $m(x) = x^3 + x + 1$ e seja $p(x) = x^2 + 1$. Em $GF(2)$, a divisão pode ser lida de forma direta:
+
+\begin{enumerate}
+	\item o termo líder de $m(x)$ é $x^3$, então o primeiro termo do quociente é $x$;
+	\item multiplica-se $x$ por $p(x)$, obtendo $x^3 + x$;
+	\item aplica-se XOR entre $m(x)$ e $x^3 + x$, restando 1.
+\end{enumerate}
+
+Como o resto final é 1, conclui-se que
+
+$$
+x^3 + x + 1 = x(x^2 + 1) + 1.
+$$
+
+Esse exemplo é didático porque mostra exatamente o que a implementação precisa preservar: alinhamento do termo de maior grau, uso de XOR no lugar da subtração e obtenção de um resto de grau menor que o do divisor.
+
+\section[Função gf2 poly mod]{A função gf2 poly mod}%
+Na implementação corrente, a função \texttt{gf2\_poly\_mod} realiza o cálculo do resto de uma divisão polinomial em $GF(2)$. Ela recebe os coeficientes do dividendo e do divisor, remove zeros terminais do divisor para determinar corretamente seu grau, converte ambos para representação inteira e executa a divisão por alinhamento dos termos líderes e aplicação sucessiva de XOR. Ao final, o valor restante é convertido novamente para um vetor de coeficientes com largura controlada.
+
+\subsection{Exemplo compatível com a função}%
+Se o dividendo for representado pelo vetor [1, 1, 0, 1] e o divisor pelo vetor [1, 0, 1], a função os interpreta como $1 + x + x^3$ e $1 + x^2$. A partir daí, o algoritmo executa a mesma lógica do exemplo anterior, mas sobre inteiros que codificam esses coeficientes. O resultado esperado é um resto de largura controlada, suficiente para continuar o fluxo de autenticação sem ambiguidades de representação.
+
+Quatro aspectos merecem atenção na análise dessa função. O primeiro é a convenção \emph{little-endian}: a posição zero do vetor corresponde a $x^0$. O segundo é a necessidade de normalizar o divisor antes de calcular o grau efetivo do polinômio. O terceiro é o tratamento do caso degenerado, no qual o divisor nulo deve provocar erro de divisão. O quarto é a preservação da largura do resto, inclusive quando o valor resultante é zero, pois essa largura é observada pelos testes do projeto e interfere na consistência do fluxo de autenticação.
+
+Esses quatro pontos conectam diretamente este capítulo ao próximo. A codificação e a auditoria do HySail dependem de blocos representados de forma estável, de restos calculados de maneira determinística e de metadados capazes de reaplicar essas mesmas operações durante a verificação.

@@ -1,0 +1,41 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Projeto de tese do HySail
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[qualificacao,mestrado,ppca]{UnB-CIC}%
+
+\usepackage{pdfpages}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Informações do Trabalho
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\orientador{\prof \dr Orientador a definir}{CIC/UnB}%
+\coordenador[a]{\prof[a] \dr[a] Coordenação a definir}{CIC/UnB}%
+\diamesano{18}{maio}{2026}%
+
+\membrobanca{\prof \dr Avaliador a definir}{Instituição a definir}%
+\membrobanca{\prof \dr Avaliador a definir}{Instituição a definir}%
+
+\autor{Autor}{HySail}%
+
+\titulo{HySail: codificação, auditoria, reconstrução e coordenação em armazenamento distribuído}%
+
+\palavraschave{armazenamento distribuído, proof of retrievability, corpo de Galois, blockchain}%
+\keywords{distributed storage, proof of retrievability, Galois field, blockchain}%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Texto
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}%
+    \capitulo{1_Introducao}{Introdução sobre o HySail}%
+    \capitulo{2_UnB-CIC}{Fundamentos Matemáticos}%
+    \capitulo{3_TCC}{Funcionamento do HySAIL}%
+    \capitulo{4_Apresentacao}{Utilização de Blockchain como meio de auditoria para o HySail}%
+    \capitulo{5_Resultados}{Resultados}%
+
+    \makeatletter
+    \@conteudoPosTextual
+    \makeatother
+\end{document}%
