@@ -1,0 +1,48 @@
+Hy-SAIL (Hyper-Scalability, Availability, and Integrity Layer) é um protocolo de Prova de Recuperabilidade (PoR - Proof of Retrievability) para sistemas de armazenamento em nuvem. Seu objetivo é garantir a integridade e a disponibilidade dos dados armazenados na nuvem.
+
+Este protocolo busca minimizar o custo do teste de disponibilidade, considerando que para sistemas de alta demanda torna-se inviável à medida que o número de arquivos cresce e seus respectivos tamanhos também. Assim, esta verificação poderá ser longa em processamento e tempo a depender do algoritmo adotado.
+
+Funcionamento
+
+Antes da utilização do protocolo é importante destacar alguns conceitos previamente.
+
+Online Codes (Fountain Codes):
+Hy-SAIL utiliza um conceito de um arquivo que pode ser dividido em diferentes blocos. Contudo, deve-se questionar como estes blocos são criados e reconstruídos, e o Online Codes é o responsável por este processo.
+
+Considere um arquivo de 100MB. Em uma transmissão normal, ele poderia ser dividido em 1000 pacotes de 100 KB cada e enviado. Se alguns pacotes se perderem, seria necessário reenviá-lo.
+
+Com o Online Codes, o processo será:
+O arquivo original é dividido em 1.000 partes, que são chamados de source symbols(símbolos fonte).
+Em vez de enviar esses source symbols diretamente, o transmissor cria uma série de encoded symbols (símbolos de codificação). Cada símbolo de codificação é uma combinação aleatória dos source symbols originais.
+O transmissor envia esses símbolos de codificação de forma contínua, como se fosse uma "fonte" de dados inesgotável.
+O receptor coleta esses encoded symbols. Assim que ele recebe um número de símbolos suficiente (um pouco mais que o número de source symbols originais), ele consegue decodificar o arquivo completo(A decodificação é feita através de operações XOR).
+O receptor não precisa saber quais partes foram perdidas. Apenas é necessário um número suficiente de encoded symbols, independentemente de quais sejam.
+A principal vantagem do Online Codes é que eles são rateless (sem taxa). Isso significa que ele continua gerando e transmitindo símbolos de codificação até que o receptor sinalize que tem o suficiente para decodificar o arquivo. Não há um número fixo de pacotes que precisa ser enviado.
+Representação no corpo de Galois:
+Uma das bases para a construção do protocolo é a representação de blocos no corpo de Galois GF(2n). É necessário que ocorra esta representação porque mais a frente irá garantir que determinadas propriedades possam ser utilizadas com esta representação.
+Considere uma sequência 101101101, uma subcadeia desta cadeia é 1011 e do ponto de vista adotado em Hy-SAIL seria considerado um bloco e toda a cadeia representa um arquivo.
+Esta subcadeia poderá ser descrita através do corpo do Galois como:
+1x3+0x2+1x1+1 x0 = x3+x+1
+
+Hy-SAIL
+Para o Hy-SAIL o funcionamento será dividido nos seguintes passos:
+Codificação e Upload
+O arquivo será dividido em k blocos que serão denotados por m1,m2,...,mk
+Para cada um dos blocos gerados será calculado o seu MAC, sendo este o resto da divisão do polinômio do bloco (mi(x)) por um polinômio primitivo de desafio (Pj(x))
+O usuário armazena localmente apenas esses restos (os MACs) para cada bloco.
+Utilizando o online codes, será gerado t blocos auxiliares, sendo cada bloco ai a combinação de alguns blocos de maneira randômica.
+Através da combinação randômica de blocos de mensagem e blocos auxiliares, uma operação de XOR será realizada entre estes elementos, gerando então os blocos de checagem. Exemplo: ci=m1m5a9
+O usuário armazena metadados dos blocos de checagem, sendo cada dado composto pelo índice do bloco de checagem e o índice dos elementos que o compõem. Exemplo: <7,{1,5,9,10}> significa que o bloco 7 é formado por {1,5,9,10}, dentre estes poderá estar um elemento pertencente aos blocos auxiliares, mas isto não representa um problema para a recuperação da mensagem através do Fountain Codes.
+Por fim, cada um destes blocos são distribuídos.
+Decodificação
+Hy-SAIL inicialmente busca por blocos de checagem que possuem apenas 1 elemento.
+Utilizando blocos de tamanho 1 é possível recuperar outros blocos. Por exemplo, suponha que exista o bloco de checagem c4=m5m2a9 e seja conhecido os blocos m5 e m9, então, para recuperar o bloco a9 poderá ser realizado a operação a9=m5m2c4.
+O processo será repetido até que os n blocos sejam recuperados.
+Auditoria
+Está fase busca garantir que o servidor possui o arquivo e ele pode de fato ser recuperado. Para realizar esta verificação os seguintes passos são realizados:
+O usuário inicia um “desafio” (query) para o servidor enviando um polinômio dos previamente gerados na fase de encriptação e uma lista com os blocos que serão verificados.
+O provedor realiza uma operação de XOR bit a bit em todos os blocos de verificação cη(x) contidos na lista recebida do usuário.
+Em seguida, ele calcula o resto da divisão polinomial do resultado dessa operação de XOR em relação ao polinômio de desafio Pj(x) recebido. O resultado desse cálculo é denominado A(x).
+Por fim, o servidor envia o resultado ao usuário.
+Para validar o usuário realiza o cálculo utilizando seus próprios blocos, garantindo então σa,j (x) ⊕ σb,j (x) = σab,j (x)
+Caso seja válido, então este “round” será considerado para o processo de validação. Para medir este fator de erro, então é introduzido τprovider que indica número de blocos de verificação corrompidos em cada provedor de armazenamento em nuvem, sendo que τmaximum indica o máximo aceitável.
