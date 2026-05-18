@@ -1,0 +1,41 @@
+\section{Funcionamento dos Smart Contracts em Ethereum}%
+Em Ethereum, contratos inteligentes são programas persistidos na cadeia e executados pela \acrfull{EVM}. Sua função não é armazenar arquivos de grande porte nem reconstruir conteúdos binários complexos, mas registrar estado, impor regras de transição e liquidar interações entre as partes. Essa limitação é especialmente importante para o HySail: a cadeia pode coordenar registro, autorização, aceitação de blocos e liquidação econômica, mas a reconstrução do arquivo deve permanecer fora da cadeia.
+
+No repositório atual, essa divisão de responsabilidades é refletida em três contratos principais. O \emph{FileRegistry} registra o identificador do arquivo, o resumo do manifesto, a raiz dos blocos, o resumo do arquivo final e a localização dos metadados. O \emph{ProviderRegistry} mantém a identidade lógica dos provedores, seus pontos de acesso e a política de preço por bloco. O \emph{DownloadManager} coordena pedidos de download, orçamento do solicitante, aceitação de blocos, reembolso e finalização da tarefa. Essa camada, portanto, prolonga o mecanismo de auditoria apresentado anteriormente: os verificadores algébricos continuam fora da cadeia, enquanto a blockchain registra quais evidências produziram efeitos econômicos e operacionais.
+
+\section{Arquitetura proposta}%
+\begin{figure}[!ht]
+	\centering
+	\begin{tikzpicture}[
+		node distance=1.4cm and 1.5cm,
+		block/.style={rectangle, draw, rounded corners, minimum width=3.2cm, minimum height=1cm, align=center},
+		>=Latex
+	]
+		\node[block] (user) {Cliente do usuário};
+		\node[block, right=of user] (chain) {Smart contracts\\FileRegistry\\ProviderRegistry\\DownloadManager};
+		\node[block, below=of chain] (meta) {Metadados fora da cadeia\\IPFS ou HTTP};
+		\node[block, below=of meta] (recon) {Reconstrutor};
+		\node[block, left=of recon] (providers) {Provedores\\de armazenamento};
+		\node[block, right=of recon] (file) {Arquivo\\reconstruído};
+
+		\draw[->] (user) -- node[above]{registra manifesto e compromissos} (chain);
+		\draw[->] (user) |- node[pos=0.25,left]{publica referência} (meta);
+		\draw[->] (user) to[bend left=14] node[above]{abre pedido de download} (chain);
+		\draw[->] (chain) -- node[right]{evento de download} (meta);
+		\draw[->] (chain) -- node[above left]{regras do job e pagamento} (providers);
+		\draw[->] (recon) -- node[right]{carrega metadados} (meta);
+		\draw[->] (recon) -- node[above]{solicita blocos} (providers);
+		\draw[->] (providers) -- node[below]{blocos e recibos} (recon);
+		\draw[->] (recon) -- node[below]{submete uso e hash final} (chain);
+		\draw[->] (chain) -- node[above]{paga blocos aceitos} (providers);
+		\draw[->] (recon) -- node[above]{entrega saída reconstruída} (file);
+		\draw[->] (file) -- node[right]{download} (user);
+	\end{tikzpicture}
+	\caption{Arquitetura proposta para integrar HySail e Ethereum, seguindo o fluxo documentado em doc/dapp\_architecture.md.}
+\end{figure}
+
+A arquitetura proposta conserva o núcleo do HySail e o adapta às restrições da cadeia. O diagrama acima segue a mesma decomposição registrada no documento \texttt{doc/dapp\_architecture.md}: cliente do usuário, contratos inteligentes, metadados fora da cadeia, provedores, reconstrutor e arquivo reconstruído. A codificação, o transporte de blocos, a validação algébrica e a reconstrução permanecem em componentes externos. Já a cadeia recebe apenas resumos, identificadores, orçamentos, eventos e confirmações de uso. Essa separação minimiza custo computacional em Ethereum e evita deslocar para contratos tarefas incompatíveis com o modelo de execução da rede~\cite{hysail_dapp_architecture}.
+
+Para que a leitura do diagrama não fique abstrata, convém seguir o fluxo em seis passos. Primeiro, o cliente registra compromissos e publica a referência para os metadados. Segundo, abre um pedido de download na cadeia. Terceiro, o reconstrutor observa o evento, carrega os metadados e identifica quais provedores devem ser contatados. Quarto, os provedores entregam os blocos fora da cadeia. Quinto, o reconstrutor valida e recompõe o arquivo. Sexto, a cadeia recebe o hash do resultado e liquida os blocos aceitos. Essa sequência coincide com a arquitetura mermaid do diretório doc e evita que a descrição textual se afaste do desenho efetivamente adotado pelo projeto.
+
+Sob esse arranjo, a blockchain funciona como meio de auditoria e coordenação institucional. Ela não substitui a verificação algébrica do HySail; antes, oferece um registro imutável das operações relevantes, dos compromissos assumidos e das liquidações associadas aos blocos aceitos. Com isso, o protocolo passa a contar com uma camada adicional de rastreabilidade, adequada para cenários em que a confiança entre as partes é limitada ou economicamente mediada. A consequência direta para o capítulo seguinte é que os resultados precisam ser avaliados em duas frentes: a consistência algébrica da reconstrução e a coerência arquitetural da separação entre cadeia e componentes externos.
