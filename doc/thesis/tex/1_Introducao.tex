@@ -1,7 +1,7 @@
 O HySail é uma proposta de \emph{Proof of Retrievability} orientada a ambientes distribuídos de
 armazenamento em nuvem. Sua formulação original busca conciliar três propriedades nor-
 malmente difíceis de atender de forma simultânea: disponibilidade do dado, integridade
-do conteúdo armazenado e custo reduzido de auditoria [1]. Em vez de exigir a recupe-
+do conteúdo armazenado e custo reduzido de auditoria \cite{amaral2013hysail}. Em vez de exigir a recupe-
 ração integral do arquivo a cada verificação, o sistema utiliza meios de recuperação
 mais econômicas através de checagens de hash.
 
@@ -42,65 +42,144 @@ processo de pagamento é feito de maneira automática e descentralizada.
 Antes que toda sua arquitetura seja abordada, faz-se necessário explicar alguns dos fundamentos
 em torno do tema, de maneira que torna-se simples o desenvolvimento adiante.
 
+\subsection{Blockchain}
+
+\emph{Blockchain} pode ser entendida como uma base de dados compartilhada, na qual transações são
+agrupadas em blocos encadeados por funções de hash. O conceito foi utilizado pela
+primeira vez em Bitcoin, proposto por Satoshi Nakamoto em 2008 \cite{nakamoto2008bitcoin}. Cada bloco referencia o bloco anterior,
+o que cria uma estrutura na qual alterações retroativas se tornam computacionalmente inviáveis sem que
+a rede perceba inconsistências. Em vez de um único servidor central, múltiplos nós
+mantêm cópias do histórico e chegam a um acordo sobre seu estado por meio de um
+mecanismo de consenso.
+
+Nesse contexto, a função hash é relevante porque conecta integridade dos dados,
+encadeamento entre blocos e verificabilidade pública das alterações no histórico.
+A função hash pode ser modelada por $h: \{0,1\}^* \to \{0,1\}^n$, em que uma entrada de
+tamanho arbitrário é mapeada para uma saída de $n$ bits. Para dois dados $x$ e $y$, com $x \neq y$,
+espera-se que $h(x) \neq h(y)$, e a probabilidade de colisão é aproximadamente $2^{-n}$.
+No encadeamento de blocos, se $H_i = h(B_i \| H_{i-1})$, qualquer alteração em $B_i$ ou em
+$H_{i-1}$ altera $H_i$ e invalida a continuidade criptográfica do histórico.
+
+Com esse encadeamento, uma modificação em um bloco antigo invalida os hashes dos blocos
+seguintes. Assim, a rede detecta rapidamente inconsistências no histórico. Esse mecanismo
+não impede alterações por si só, mas torna a adulteração visível e tecnicamente custosa
+quando combinada com o consenso.
+
+Essa mesma função hash também é usada no processo de consenso de redes baseadas em
+\emph{Proof of Work} (prova de trabalho, PoW). Nesse caso, o objetivo não é apenas verificar integridade, mas
+também impor um custo computacional para a criação de novos blocos.
+
+No PoW, o \emph{nonce} é um valor numérico que o minerador, isto é, o participante da rede
+responsável por propor novos blocos, altera repetidamente para gerar
+novas tentativas de hash para o mesmo bloco. A cada tentativa, calcula-se um novo valor
+do tipo $h(\text{cabecalho} \| \text{nonce})$, e o bloco só é aceito quando esse resultado é menor que
+o alvo de dificuldade $T$ definido pela rede, isto é, um limite numérico que determina
+quão difícil é encontrar um hash válido para o bloco.
+
+Como não há método eficiente conhecido para prever qual nonce produzirá um hash válido,
+a busca ocorre por tentativa e erro, com alto custo computacional. O efeito de segurança
+é econômico: reescrever blocos antigos exigiria refazer esse trabalho e ainda acompanhar
+o ritmo de geração de novos blocos da rede.
+
+Esse modelo combina três propriedades relevantes para o
+presente trabalho: integridade dos registros, rastreabilidade das operações e redução
+de dependência de uma autoridade única para validação. Assim, eventos importantes
+(como envio de evidências, confirmação de serviço e liquidação de pagamento) podem ser
+registrados de forma verificável por qualquer parte autorizada a consultar a rede.
+
+Como exemplo, considere uma auditoria periódica de
+um arquivo distribuído entre servidores. Em cada rodada, o provedor envia a evidência
+de disponibilidade, e o sistema registra na \emph{blockchain} três informações: identificador
+do arquivo, hash da evidência e \emph{timestamp} da submissão.
+
+Se alguém tentar alterar depois o resultado de uma rodada (por exemplo, para simular que
+a prova foi entregue no prazo), o hash registrado deixará de corresponder ao conteúdo
+real apresentado. Além disso, em uma rede com PoW, alterar blocos antigos para esconder
+essa inconsistência exigiria recomputar o trabalho dos blocos seguintes, porque cada
+bloco depende criptograficamente do bloco anterior. Ao alterar um bloco antigo, seus
+hashes deixam de coincidir com os registros posteriores, de modo que seria necessário
+refazer o \emph{Proof of Work} de cada bloco subsequente para reconstruir uma cadeia válida,
+o que aumenta fortemente o custo do ataque. Dessa forma, a \emph{blockchain} atua como um
+histórico auditável das provas de armazenamento.
+
 \subsection{Ethereum}
 
 O Ethereum é, em geral, descrito como uma plataforma descentralizada de propósito
 geral para execução de aplicações distribuídas. Diferentemente de redes voltadas apenas
 à transferência de valor, ele também permite registrar estados e regras de negócio por
-meio de smart contracts. Como resultado, cria-se um ambiente com maior
-transparência, rastreabilidade e menor dependência de intermediários centrais [4, 5].
+meio de \emph{smart contracts}. Como resultado, cria-se um ambiente com maior
+transparência, rastreabilidade e menor dependência de intermediários centrais \cite{buterin2014next,wood2014yellowpaper}.
 
 Em termos funcionais, a rede mantém um registro distribuído no qual contas, saldos e contratos
 são atualizados por transações validadas coletivamente. Essas transações são executadas
-na Ethereum Virtual Machine (EVM), ambiente que garante o mesmo resultado para a
-mesma entrada, independentemente do nó que faz a execução [5]. Com isso, parte da
+na \emph{Ethereum Virtual Machine} (EVM), ambiente que garante o mesmo resultado para a
+mesma entrada, independentemente do nó que faz a execução \cite{wood2014yellowpaper}. Com isso, parte da
 lógica de confiança sai de serviços centralizados e passa a ser definida em código público
 e auditável.
 
-No modelo contemporâneo da rede, a segurança do consenso é sustentada por Proof of
-Stake, no qual validadores bloqueiam capital como garantia de comportamento adequado.
+No modelo contemporâneo da rede, a segurança do consenso é sustentada por \emph{Proof of
+Stake}, no qual validadores bloqueiam capital como garantia de comportamento adequado.
 Essa mudança reduziu o consumo energético em relação ao modelo anterior e manteve a
-propriedade de rastreabilidade pública das operações [6]. Na prática, isso é útil em
+propriedade de rastreabilidade pública das operações \cite{ethereumfoundation2026pos}. Na prática, isso é útil em
 cenários que exigem evidências verificáveis, como auditoria, registro de eventos e
 liquidação automática de obrigações.
 
 \subsubsection{Smart Contracts}
 
-No contexto do Ethereum, smart contracts são programas imutáveis (salvo padrões de
-atualização explicitamente adotados) que ficam na cadeia e executam automaticamente
+No contexto do Ethereum, \emph{smart contracts} são programas imutáveis (salvo padrões de
+atualização explicitamente adotados) que ficam registrados na \emph{blockchain} e executam automaticamente
 as condições definidas em código. A ideia de contrato inteligente, em sentido amplo,
 aparece em Szabo como um mecanismo computacional para reduzir custos de transação
-e ambiguidades na execução de acordos [7]. No Ethereum, esse conceito é implementado
-na prática por meio da EVM e de transações que disparam as funções do contrato [5].
+e ambiguidades na execução de acordos \cite{szabo1997formalizing}. No Ethereum, esse conceito é implementado
+na prática por meio da EVM e de transações que disparam as funções do contrato \cite{wood2014yellowpaper}.
 
-Sob a ótica arquitetural desta pesquisa, smart contracts são relevantes por três
-razões. Primeiro, permitem explicitar regras de cobrança e distribuição de incentivos
-de forma transparente, com menor dependência de reconciliação manual. Segundo,
-permitem automatizar pagamentos condicionados a evidências de serviço, o que está
-alinhado ao objetivo de vincular remuneração à disponibilidade real dos dados. Terceiro,
-favorecem auditoria posterior, pois as decisões de liquidação ficam registradas na rede
-[4, 8].
+Um \emph{smart contract} opera como um programa cujo código e
+estado ficam associados a um endereço na rede. Quando um usuário ou outra aplicação
+envia uma transação para esse endereço, a EVM executa a função solicitada com os
+parâmetros informados, lê os dados persistidos do contrato e, se as condições do código
+forem satisfeitas, produz uma transição de estado. Essa execução é determinística: dada
+a mesma entrada e o mesmo estado anterior, todos os nós devem chegar ao mesmo resultado.
+Ao final, as mudanças aprovadas, como atualização de variáveis, emissão de eventos e
+transferência de valores, passam a integrar o estado global da rede.
 
-Ainda assim, o uso de smart contracts impõe limitações práticas. Custos de execução,
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+	node distance=1.4cm,
+	box/.style={rectangle, draw, rounded corners, align=center, minimum width=4.2cm, minimum height=0.9cm},
+	decision/.style={diamond, draw, align=center, aspect=2, inner sep=1.2pt},
+	arrow/.style={-{Latex[length=2.2mm]}, thick}
+]
+	\node[box] (tx) {Usuário/aplicação envia\\transação ao contrato};
+	\node[box, below=of tx] (evm) {EVM executa a função\\com os parâmetros};
+	\node[decision, below=of evm] (check) {Condições\\atendidas?};
+	\node[box, below left=1.7cm and 1.5cm of check] (ok) {Atualiza estado\\e emite eventos};
+	\node[box, below right=1.7cm and 1.5cm of check] (fail) {Transação revertida\\sem transição de estado};
+	\node[box, below=2.0cm of check] (final) {Rede valida o resultado\\e persiste o novo estado};
+
+	\draw[arrow] (tx) -- (evm);
+	\draw[arrow] (evm) -- (check);
+	\draw[arrow] (check) -- node[left] {sim} (ok);
+	\draw[arrow] (check) -- node[right] {não} (fail);
+	\draw[arrow] (ok) |- (final);
+\end{tikzpicture}
+\caption{Fluxo simplificado de execução de um \emph{smart contract} no Ethereum.}
+\label{fig:smart-contract-fluxo}
+\end{figure}
+
+\emph{Smart contracts} são relevantes por três
+razões:
+1. Permitem explicitar regras de cobrança e distribuição de incentivos
+de forma transparente, com menor dependência processos manuais para transações e validação.
+2. Permitem automatizar pagamentos condicionados a evidências de serviço, o que está
+alinhado ao objetivo de vincular remuneração à disponibilidade real dos dados.
+3. Favorecem auditoria posterior, pois as decisões de transação ficam registradas na rede
+\cite{buterin2014next,antonopoulos2018mastering}.
+
+Ainda assim, o uso de \emph{smart contracts} impõe limitações práticas. Custos de execução,
 restrições de desempenho e riscos de implementação (como erros lógicos difíceis de
 reverter) exigem cuidado no projeto e na validação do código. Por isso, recomenda-se o
-uso de testes, auditorias e mecanismos de contingência. Assim, smart contracts
+uso de testes, auditorias e mecanismos de contingência. Assim, \emph{smart contracts}
 devem ser entendidos como uma camada complementar de execução verificável, e não
 como substituição completa de mecanismos institucionais.
 
-\subsection*{Referências utilizadas}
-
-[4] BUTERIN, V. A Next-Generation Smart Contract and Decentralized Application Platform.
-2014. Disponível em: https://ethereum.org/en/whitepaper/.
-
-[5] WOOD, G. Ethereum: A Secure Decentralised Generalised Transaction Ledger (Yellow
-Paper). 2014. Disponível em: https://ethereum.github.io/yellowpaper/paper.pdf.
-
-[6] ETHEREUM FOUNDATION. Ethereum Proof-of-Stake (PoS). Disponível em:
-https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/. Acesso em: 3 jun. 2026.
-
-[7] SZABO, N. Formalizing and Securing Relationships on Public Networks. First Monday,
-v. 2, n. 9, 1997. Disponível em: https://firstmonday.org/ojs/index.php/fm/article/view/548.
-
-[8] ANTONOPOULOS, A. M.; WOOD, G. Mastering Ethereum: Building Smart Contracts and
-DApps. Sebastopol: O'Reilly Media, 2018.
