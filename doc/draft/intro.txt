@@ -126,6 +126,15 @@ aparece em Szabo como um mecanismo computacional para reduzir custos de transaç
 e ambiguidades na execução de acordos [7]. No Ethereum, esse conceito é implementado
 na prática por meio da EVM e de transações que disparam as funções do contrato [5].
 
+Um smart contract opera como um programa cujo código e
+estado ficam associados a um endereço na rede. Quando um usuário ou outra aplicação
+envia uma transação para esse endereço, a EVM executa a função solicitada com os
+parâmetros informados, lê os dados persistidos do contrato e, se as condições do código
+forem satisfeitas, produz uma transição de estado. Essa execução é determinística: dada
+a mesma entrada e o mesmo estado anterior, todos os nós devem chegar ao mesmo resultado.
+Ao final, as mudanças aprovadas, como atualização de variáveis, emissão de eventos e
+transferência de valores, passam a integrar o estado global da rede.
+
 Smart contracts são relevantes por três razões no contexto atual:
 1. Permitem explicitar regras de cobrança e distribuição de incentivos
 de forma transparente, com menor dependência processos manuais para transações e validação.
