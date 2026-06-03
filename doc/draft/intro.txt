@@ -1,0 +1,151 @@
+O HySail é uma proposta de Proof of Retrievability orientada a ambientes distribuídos de
+armazenamento em nuvem. Sua formulação original busca conciliar três propriedades nor-
+malmente difíceis de atender de forma simultânea: disponibilidade do dado, integridade
+do conteúdo armazenado e custo reduzido de auditoria [1]. Em vez de exigir a recupe-
+ração integral do arquivo a cada verificação, o sistema utiliza meios de recuperação
+mais econômicas através de checagens de hash.
+Seu funcionamento é estruturado em torno de alguns fundamentos principais:
+1. Upload de partes criptografadas de um arquivo
+2. Geração de polinômios no corpo de Galois
+3. Elaboração de MACs para cada parte criptografada
+4. Checagem da integridade de blocos utilizando os polinômios já apresentados
+6. Reconstrução do arquivo original utilizando os blocos necessários e válidos
+7. Redistribuição de blocos danificados
+
+Considerando estes pontos, é notável que parte do processo de validação é concentrado
+ao lado do usuário, pois, ele é responsável por processos de geração, validação, upload e download.
+O servidor apenas armazena as informações, contudo, ainda há uma sobrecarga de responsabilidades
+ao lado do usuário, principalmente se existem muitos dados que são distribuidos e validades. Em
+vista da possível problemática, o presente trabalho visa propor uma solução que atende os seguintes
+critérios:
+1. Diminuir parte das responsabilidade de validação do usuário
+2. Garantir que o usuário somente faça o download de arquivos sem que haja muitos
+processos intermediários
+3. Criar um mecanismo de cobrança que não exija que o usuário faça gastos constantes
+com os servidores participantes, e crie um processo de cobrança baseado nas informações
+entregues.
+
+Os benefícios existentes em tal aplicação está principalmente baseada em custos de infraestrutura,
+semelhante aos utilizados em contextos como AWS em que a cobrança é feita através do uso. Neste
+caso, a cobrança será realizada sob os dados armazenados, considerando sua duplicação, e o
+processo de pagamento é feito de maneira automática e descentralizada.
+
+### Preliminares
+
+Antes que toda sua arquitetura seja abordada, faz-se necessário explicar alguns dos fundamentos
+em torno do tema, de maneira que torna-se simples o desenvolvimento adiante.
+
+## Blockchain
+
+Blockchain pode ser entendida como uma base de dados compartilhada, na qual transações são
+agrupadas em blocos encadeados por funções de hash. O conceito foi utilizado pela
+primeira vez, de forma operacional e em larga escala, no Bitcoin, proposto por Satoshi
+Nakamoto em 2008 [9]. Cada bloco referencia o bloco anterior, o que cria uma
+estrutura na qual alterações retroativas se tornam computacionalmente inviáveis sem que
+a rede perceba inconsistências. Em vez de um único servidor central, múltiplos nós
+mantêm cópias do histórico e chegam a acordo sobre seu estado por meio de um
+mecanismo de consenso.
+
+A função hash pode ser modelada por h: {0,1}* -> {0,1}^n, em que uma entrada de
+tamanho arbitrário é mapeada para uma saída de n bits. Para dois dados x e y, com x != y,
+espera-se que h(x) != h(y), e a probabilidade de colisão é aproximadamente 2^(-n).
+No encadeamento de blocos, se H_i = h(B_i || H_(i-1)), qualquer alteração em B_i ou em
+H_(i-1) altera H_i e invalida a continuidade criptográfica do histórico.
+
+Com esse encadeamento, uma modificação em um bloco antigo invalida os hashes dos blocos
+seguintes. Assim, a rede detecta rapidamente inconsistências no histórico. Esse mecanismo
+não impede alterações por si só, mas torna a adulteração visível e tecnicamente custosa
+quando combinada com o consenso.
+
+No Proof of Work (PoW), o nonce é um campo numérico variável do cabeçalho do bloco,
+ajustado pelo minerador sem alterar o conjunto de transações. O objetivo é encontrar
+um nonce tal que h(cabecalho || nonce) < T, em que T é o alvo de dificuldade da rede.
+Como não há método eficiente conhecido para prever esse nonce, a busca ocorre por
+tentativa e erro, com alto custo computacional. O efeito de segurança é econômico:
+reescrever blocos antigos exigiria refazer esse trabalho e ainda acompanhar o ritmo de
+geração de novos blocos da rede.
+
+Do ponto de vista prático, esse modelo combina três propriedades relevantes para o
+presente trabalho: integridade dos registros, rastreabilidade das operações e redução
+de dependência de uma autoridade única para validação. Assim, eventos importantes
+(como envio de evidências, confirmação de serviço e liquidação de pagamento) podem ser
+registrados de forma verificável por qualquer parte autorizada a consultar a rede.
+
+Como exemplo, considere uma auditoria periódica de
+um arquivo distribuído entre servidores. Em cada rodada, o provedor envia a evidência
+de disponibilidade, e o sistema registra na blockchain três informações: identificador
+do arquivo, hash da evidência e timestamp da submissão.
+
+Se alguém tentar alterar depois o resultado de uma rodada (por exemplo, para simular que
+a prova foi entregue no prazo), o hash registrado deixará de corresponder ao conteúdo
+real apresentado. Além disso, em uma rede com PoW, alterar blocos antigos para esconder
+essa inconsistência exigiria recomputar trabalho em cadeia, o que aumenta fortemente o
+custo do ataque. Dessa forma, a blockchain atua como um histórico auditável das provas
+de armazenamento.
+
+## Ethereum
+
+O Ethereum é, em geral, descrito como uma plataforma descentralizada de propósito
+geral para execução de aplicações distribuídas. Diferentemente de redes voltadas apenas
+à transferência de valor, ele também permite registrar estados e regras de negócio por
+meio de smart contracts. Como resultado, cria-se um ambiente com maior
+transparência, rastreabilidade e menor dependência de intermediários centrais [4, 5].
+
+Em termos funcionais, a rede mantém um registro distribuído no qual contas, saldos e contratos
+são atualizados por transações validadas coletivamente. Essas transações são executadas
+na Ethereum Virtual Machine (EVM), ambiente que garante o mesmo resultado para a
+mesma entrada, independentemente do nó que faz a execução [5]. Com isso, parte da
+lógica de confiança sai de serviços centralizados e passa a ser definida em código público
+e auditável.
+
+No modelo contemporâneo da rede, a segurança do consenso é sustentada por Proof of
+Stake, no qual validadores bloqueiam capital como garantia de comportamento adequado.
+Essa mudança reduziu o consumo energético em relação ao modelo anterior e manteve a
+propriedade de rastreabilidade pública das operações [6]. Na prática, isso é útil em
+cenários que exigem evidências verificáveis, como auditoria, registro de eventos e
+liquidação automática de obrigações.
+
+### Smart Contracts
+
+No contexto do Ethereum, smart contracts são programas imutáveis (salvo padrões de
+atualização explicitamente adotados) que ficam registrados na blockchain e executam automaticamente
+as condições definidas em código. A ideia de um contrato inteligente, em sentido amplo,
+aparece em Szabo como um mecanismo computacional para reduzir custos de transação
+e ambiguidades na execução de acordos [7]. No Ethereum, esse conceito é implementado
+na prática por meio da EVM e de transações que disparam as funções do contrato [5].
+
+Smart contracts são relevantes por três razões no contexto atual:
+1. Permitem explicitar regras de cobrança e distribuição de incentivos
+de forma transparente, com menor dependência processos manuais para transações e validação.
+2. Permitem automatizar pagamentos condicionados a evidências de serviço, o que está
+alinhado ao objetivo de vincular remuneração à disponibilidade real dos dados.
+3. Favorecem auditoria posterior, pois as decisões de transação ficam registradas na rede
+[4, 8].
+
+Ainda assim, o uso de smart contracts impõe limitações práticas. Custos de execução,
+restrições de desempenho e riscos de implementação (como erros lógicos difíceis de
+reverter) exigem cuidado no projeto e na validação do código. Por isso, recomenda-se o
+uso de testes, auditorias e mecanismos de contingência. Assim, smart contracts
+devem ser entendidos como uma camada complementar de execução verificável, e não
+como substituição completa do processo de pagamento convencional.
+
+### Referências utilizadas
+
+[4] BUTERIN, V. A Next-Generation Smart Contract and Decentralized Application Platform.
+2014. Disponível em: https://ethereum.org/en/whitepaper/.
+
+[5] WOOD, G. Ethereum: A Secure Decentralised Generalised Transaction Ledger (Yellow
+Paper). 2014. Disponível em: https://ethereum.github.io/yellowpaper/paper.pdf.
+
+[6] ETHEREUM FOUNDATION. Ethereum Proof-of-Stake (PoS). Disponível em:
+https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/. Acesso em: 3 jun. 2026.
+
+[7] SZABO, N. Formalizing and Securing Relationships on Public Networks. First Monday,
+v. 2, n. 9, 1997. Disponível em: https://firstmonday.org/ojs/index.php/fm/article/view/548.
+
+[8] ANTONOPOULOS, A. M.; WOOD, G. Mastering Ethereum: Building Smart Contracts and
+DApps. Sebastopol: O'Reilly Media, 2018.
+
+[9] NAKAMOTO, S. Bitcoin: A Peer-to-Peer Electronic Cash System. 2008. Disponível em:
+https://bitcoin.org/bitcoin.pdf.
+

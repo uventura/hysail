@@ -1,5 +1,106 @@
-O HySail é uma proposta de \emph{Proof of Retrievability} orientada a ambientes distribuídos de armazenamento em nuvem. Sua formulação original busca conciliar três propriedades normalmente difíceis de atender de forma simultânea: disponibilidade do dado, integridade do conteúdo armazenado e custo reduzido de auditoria~\cite{amaral2013hysail}. Em vez de exigir a recuperação integral do arquivo a cada verificação, o sistema combina codificação redundante e autenticação algébrica para produzir evidências de recuperabilidade mais econômicas.
+O HySail é uma proposta de \emph{Proof of Retrievability} orientada a ambientes distribuídos de
+armazenamento em nuvem. Sua formulação original busca conciliar três propriedades nor-
+malmente difíceis de atender de forma simultânea: disponibilidade do dado, integridade
+do conteúdo armazenado e custo reduzido de auditoria [1]. Em vez de exigir a recupe-
+ração integral do arquivo a cada verificação, o sistema utiliza meios de recuperação
+mais econômicas através de checagens de hash.
 
-Sob a perspectiva do repositório atual, o HySail se materializa como uma arquitetura experimental composta por codificação de arquivos em blocos redundantes, armazenamento distribuído desses blocos, reconstrução guiada por metadados e integração com uma camada descentralizada de registro e liquidação~\cite{hysail_readme,hysail_dapp_architecture}. Essa implementação não replica integralmente todos os componentes descritos na tese original, mas preserva os objetivos centrais da proposta e oferece um ambiente reproduzível para análise técnica.
+Seu funcionamento é estruturado em torno de alguns fundamentos principais:
 
-O problema que motiva esta tese é claro: sistemas distribuídos precisam demonstrar que os dados permanecem recuperáveis mesmo quando fragmentados entre múltiplos provedores. A resposta do HySail consiste em articular técnicas de codificação sem taxa fixa, operações em corpo finito e mecanismos de auditoria capazes de explorar propriedades homomórficas. A partir dessa base, torna-se possível discutir não apenas a distribuição e a recuperação dos arquivos, mas também a coordenação de evidências de disponibilidade em um ecossistema híbrido, parcialmente fora da cadeia e parcialmente apoiado por contratos inteligentes.
+\begin{enumerate}
+\item Upload de partes criptografadas de um arquivo
+\item Geração de polinômios no corpo de Galois
+\item Elaboração de MACs para cada parte criptografada
+\item Checagem da integridade de blocos utilizando os polinômios já apresentados
+\item Reconstrução do arquivo original utilizando os blocos necessários e válidos
+\item Redistribuição de blocos danificados
+\end{enumerate}
+
+Considerando estes pontos, é notável que parte do processo de validação é concentrado
+ao lado do usuário, pois, ele é responsável por processos de geração, validação, upload e download.
+O servidor apenas armazena as informações, contudo, ainda há uma sobrecarga de responsabilidades
+ao lado do usuário, principalmente se existem muitos dados que são distribuidos e validades. Em
+vista da possível problemática, o presente trabalho visa propor uma solução que atende os seguintes
+critérios:
+
+\begin{enumerate}
+\item Diminuir parte das responsabilidade de validação do usuário
+\item Garantir que o usuário somente faça o download de arquivos sem que haja muitos
+processos intermediários
+\item Criar um mecanismo de cobrança que não exija que o usuário faça gastos constantes
+com os servidores participantes, e crie um processo de cobrança baseado nas informações
+entregues.
+\end{enumerate}
+
+Os benefícios existentes em tal aplicação está principalmente baseada em custos de infraestrutura,
+semelhante aos utilizados em contextos como AWS em que a cobrança é feita através do uso. Neste
+caso, a cobrança será realizada sob os dados armazenados, considerando sua duplicação, e o
+processo de pagamento é feito de maneira automática e descentralizada.
+
+\section{Preliminares}
+
+Antes que toda sua arquitetura seja abordada, faz-se necessário explicar alguns dos fundamentos
+em torno do tema, de maneira que torna-se simples o desenvolvimento adiante.
+
+\subsection{Ethereum}
+
+O Ethereum é, em geral, descrito como uma plataforma descentralizada de propósito
+geral para execução de aplicações distribuídas. Diferentemente de redes voltadas apenas
+à transferência de valor, ele também permite registrar estados e regras de negócio por
+meio de smart contracts. Como resultado, cria-se um ambiente com maior
+transparência, rastreabilidade e menor dependência de intermediários centrais [4, 5].
+
+Em termos funcionais, a rede mantém um registro distribuído no qual contas, saldos e contratos
+são atualizados por transações validadas coletivamente. Essas transações são executadas
+na Ethereum Virtual Machine (EVM), ambiente que garante o mesmo resultado para a
+mesma entrada, independentemente do nó que faz a execução [5]. Com isso, parte da
+lógica de confiança sai de serviços centralizados e passa a ser definida em código público
+e auditável.
+
+No modelo contemporâneo da rede, a segurança do consenso é sustentada por Proof of
+Stake, no qual validadores bloqueiam capital como garantia de comportamento adequado.
+Essa mudança reduziu o consumo energético em relação ao modelo anterior e manteve a
+propriedade de rastreabilidade pública das operações [6]. Na prática, isso é útil em
+cenários que exigem evidências verificáveis, como auditoria, registro de eventos e
+liquidação automática de obrigações.
+
+\subsubsection{Smart Contracts}
+
+No contexto do Ethereum, smart contracts são programas imutáveis (salvo padrões de
+atualização explicitamente adotados) que ficam na cadeia e executam automaticamente
+as condições definidas em código. A ideia de contrato inteligente, em sentido amplo,
+aparece em Szabo como um mecanismo computacional para reduzir custos de transação
+e ambiguidades na execução de acordos [7]. No Ethereum, esse conceito é implementado
+na prática por meio da EVM e de transações que disparam as funções do contrato [5].
+
+Sob a ótica arquitetural desta pesquisa, smart contracts são relevantes por três
+razões. Primeiro, permitem explicitar regras de cobrança e distribuição de incentivos
+de forma transparente, com menor dependência de reconciliação manual. Segundo,
+permitem automatizar pagamentos condicionados a evidências de serviço, o que está
+alinhado ao objetivo de vincular remuneração à disponibilidade real dos dados. Terceiro,
+favorecem auditoria posterior, pois as decisões de liquidação ficam registradas na rede
+[4, 8].
+
+Ainda assim, o uso de smart contracts impõe limitações práticas. Custos de execução,
+restrições de desempenho e riscos de implementação (como erros lógicos difíceis de
+reverter) exigem cuidado no projeto e na validação do código. Por isso, recomenda-se o
+uso de testes, auditorias e mecanismos de contingência. Assim, smart contracts
+devem ser entendidos como uma camada complementar de execução verificável, e não
+como substituição completa de mecanismos institucionais.
+
+\subsection*{Referências utilizadas}
+
+[4] BUTERIN, V. A Next-Generation Smart Contract and Decentralized Application Platform.
+2014. Disponível em: https://ethereum.org/en/whitepaper/.
+
+[5] WOOD, G. Ethereum: A Secure Decentralised Generalised Transaction Ledger (Yellow
+Paper). 2014. Disponível em: https://ethereum.github.io/yellowpaper/paper.pdf.
+
+[6] ETHEREUM FOUNDATION. Ethereum Proof-of-Stake (PoS). Disponível em:
+https://ethereum.org/en/developers/docs/consensus-mechanisms/pos/. Acesso em: 3 jun. 2026.
+
+[7] SZABO, N. Formalizing and Securing Relationships on Public Networks. First Monday,
+v. 2, n. 9, 1997. Disponível em: https://firstmonday.org/ojs/index.php/fm/article/view/548.
+
+[8] ANTONOPOULOS, A. M.; WOOD, G. Mastering Ethereum: Building Smart Contracts and
+DApps. Sebastopol: O'Reilly Media, 2018.
