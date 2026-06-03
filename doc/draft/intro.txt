@@ -39,13 +39,14 @@ em torno do tema, de maneira que torna-se simples o desenvolvimento adiante.
 
 Blockchain pode ser entendida como uma base de dados compartilhada, na qual transações são
 agrupadas em blocos encadeados por funções de hash. O conceito foi utilizado pela
-primeira vez, de forma operacional e em larga escala, no Bitcoin, proposto por Satoshi
-Nakamoto em 2008 [9]. Cada bloco referencia o bloco anterior, o que cria uma
-estrutura na qual alterações retroativas se tornam computacionalmente inviáveis sem que
+primeira vez em Bitcoin, proposto por Satoshi Nakamoto em 2008 [9]. Cada bloco referencia o bloco anterior,
+o que cria uma estrutura na qual alterações retroativas se tornam computacionalmente inviáveis sem que
 a rede perceba inconsistências. Em vez de um único servidor central, múltiplos nós
-mantêm cópias do histórico e chegam a acordo sobre seu estado por meio de um
+mantêm cópias do histórico e chegam a um acordo sobre seu estado por meio de um
 mecanismo de consenso.
 
+Nesse contexto, a função hash é relevante porque conecta integridade dos dados,
+encadeamento entre blocos e verificabilidade pública das alterações no histórico.
 A função hash pode ser modelada por h: {0,1}* -> {0,1}^n, em que uma entrada de
 tamanho arbitrário é mapeada para uma saída de n bits. Para dois dados x e y, com x != y,
 espera-se que h(x) != h(y), e a probabilidade de colisão é aproximadamente 2^(-n).
@@ -57,15 +58,23 @@ seguintes. Assim, a rede detecta rapidamente inconsistências no histórico. Ess
 não impede alterações por si só, mas torna a adulteração visível e tecnicamente custosa
 quando combinada com o consenso.
 
-No Proof of Work (PoW), o nonce é um campo numérico variável do cabeçalho do bloco,
-ajustado pelo minerador sem alterar o conjunto de transações. O objetivo é encontrar
-um nonce tal que h(cabecalho || nonce) < T, em que T é o alvo de dificuldade da rede.
-Como não há método eficiente conhecido para prever esse nonce, a busca ocorre por
-tentativa e erro, com alto custo computacional. O efeito de segurança é econômico:
-reescrever blocos antigos exigiria refazer esse trabalho e ainda acompanhar o ritmo de
-geração de novos blocos da rede.
+Essa mesma função hash também é usada no processo de consenso de redes baseadas em
+Proof of Work (prova de trabalho, PoW). Nesse caso, o objetivo não é apenas verificar integridade, mas
+também impor um custo computacional para a criação de novos blocos.
 
-Do ponto de vista prático, esse modelo combina três propriedades relevantes para o
+No PoW, o nonce é um valor numérico que o minerador, isto é, o participante da rede
+responsável por propor novos blocos, altera repetidamente para gerar
+novas tentativas de hash para o mesmo bloco. A cada tentativa, calcula-se um novo valor
+do tipo h(cabecalho || nonce), e o bloco só é aceito quando esse resultado é menor que
+o alvo de dificuldade T definido pela rede, isto é, um limite numérico que determina
+quão difícil é encontrar um hash válido para o bloco.
+
+Como não há método eficiente conhecido para prever qual nonce produzirá um hash válido,
+a busca ocorre por tentativa e erro, com alto custo computacional. O efeito de segurança
+é econômico: reescrever blocos antigos exigiria refazer esse trabalho e ainda acompanhar
+o ritmo de geração de novos blocos da rede.
+
+Esse modelo combina três propriedades relevantes para o
 presente trabalho: integridade dos registros, rastreabilidade das operações e redução
 de dependência de uma autoridade única para validação. Assim, eventos importantes
 (como envio de evidências, confirmação de serviço e liquidação de pagamento) podem ser
@@ -79,9 +88,12 @@ do arquivo, hash da evidência e timestamp da submissão.
 Se alguém tentar alterar depois o resultado de uma rodada (por exemplo, para simular que
 a prova foi entregue no prazo), o hash registrado deixará de corresponder ao conteúdo
 real apresentado. Além disso, em uma rede com PoW, alterar blocos antigos para esconder
-essa inconsistência exigiria recomputar trabalho em cadeia, o que aumenta fortemente o
-custo do ataque. Dessa forma, a blockchain atua como um histórico auditável das provas
-de armazenamento.
+essa inconsistência exigiria recomputar o trabalho dos blocos seguintes, porque cada
+bloco depende criptograficamente do bloco anterior. Ao alterar um bloco antigo, seus
+hashes deixam de coincidir com os registros posteriores, de modo que seria necessário
+refazer o Proof of Work de cada bloco subsequente para reconstruir uma cadeia válida,
+o que aumenta fortemente o custo do ataque. Dessa forma, a blockchain atua como um
+histórico auditável das provas de armazenamento.
 
 ## Ethereum
 
