@@ -1,21 +1,6 @@
 \begin{figure}[!ht]
   \centering
-  \begin{tikzpicture}[
-    node distance=1.8cm,
-    stage/.style={rectangle, draw, rounded corners, minimum width=3.4cm, minimum height=0.95cm, align=center},
-    >=Latex
-  ]
-    \node[stage] (input) {Arquivo de entrada};
-    \node[stage, right=of input] (encode) {Codificação\\e geração de metadados};
-    \node[stage, right=of encode] (upload) {Distribuição\\entre provedores};
-    \node[stage, below=of encode] (audit) {Auditoria por\\desafio-resposta};
-    \node[stage, left=of audit] (decode) {Decodificação\\e reconstrução};
-    \draw[->] (input) -- (encode);
-    \draw[->] (encode) -- (upload);
-    \draw[->] (upload) -- (audit);
-    \draw[->] (audit) -- (decode);
-    \draw[->] (decode) -- (input);
-  \end{tikzpicture}
+  \includegraphics[width=\textwidth]{img/Hysail-Architecture.png}
   \caption{Visão geral das fases centrais do HySail.}
 \end{figure}
 

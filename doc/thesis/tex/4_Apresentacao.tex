@@ -6,32 +6,8 @@ No repositório atual, essa divisão de responsabilidades é refletida em três 
 \section{Arquitetura proposta}%
 \begin{figure}[!ht]
 	\centering
-	\begin{tikzpicture}[
-		node distance=1.4cm and 1.5cm,
-		block/.style={rectangle, draw, rounded corners, minimum width=3.2cm, minimum height=1cm, align=center},
-		>=Latex
-	]
-		\node[block] (user) {Cliente do usuário};
-		\node[block, right=of user] (chain) {Smart contracts\\FileRegistry\\ProviderRegistry\\DownloadManager};
-		\node[block, below=of chain] (meta) {Metadados fora da cadeia\\IPFS ou HTTP};
-		\node[block, below=of meta] (recon) {Reconstrutor};
-		\node[block, left=of recon] (providers) {Provedores\\de armazenamento};
-		\node[block, right=of recon] (file) {Arquivo\\reconstruído};
-
-		\draw[->] (user) -- node[above]{registra manifesto e compromissos} (chain);
-		\draw[->] (user) |- node[pos=0.25,left]{publica referência} (meta);
-		\draw[->] (user) to[bend left=14] node[above]{abre pedido de download} (chain);
-		\draw[->] (chain) -- node[right]{evento de download} (meta);
-		\draw[->] (chain) -- node[above left]{regras do job e pagamento} (providers);
-		\draw[->] (recon) -- node[right]{carrega metadados} (meta);
-		\draw[->] (recon) -- node[above]{solicita blocos} (providers);
-		\draw[->] (providers) -- node[below]{blocos e recibos} (recon);
-		\draw[->] (recon) -- node[below]{submete uso e hash final} (chain);
-		\draw[->] (chain) -- node[above]{paga blocos aceitos} (providers);
-		\draw[->] (recon) -- node[above]{entrega saída reconstruída} (file);
-		\draw[->] (file) -- node[right]{download} (user);
-	\end{tikzpicture}
-	\caption{Arquitetura proposta para integrar HySail e Ethereum, seguindo o fluxo documentado em doc/dapp\_architecture.md.}
+	\includegraphics[width=\textwidth]{img/Hysail-Architecture-Proposed.png}
+	\caption{Nova Arquitetura de HySail utilizando blockchain como meio de auditoria}
 \end{figure}
 
 A arquitetura proposta conserva o núcleo do HySail e o adapta às restrições da cadeia. O diagrama acima segue a mesma decomposição registrada no documento \texttt{doc/dapp\_architecture.md}: cliente do usuário, contratos inteligentes, metadados fora da cadeia, provedores, reconstrutor e arquivo reconstruído. A codificação, o transporte de blocos, a validação algébrica e a reconstrução permanecem em componentes externos. Já a cadeia recebe apenas resumos, identificadores, orçamentos, eventos e confirmações de uso. Essa separação minimiza custo computacional em Ethereum e evita deslocar para contratos tarefas incompatíveis com o modelo de execução da rede~\cite{hysail_dapp_architecture}.
