@@ -8,6 +8,61 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
 
+\IfFileExists{algorithm.sty}{%
+    \usepackage{algorithm}
+    \usepackage{algpseudocode}
+}{%
+    \newcounter{algorithm}
+    \renewcommand{\thealgorithm}{\arabic{algorithm}}
+    \newcounter{algorithmicline}
+    \newcommand{\algorithmicindent}{1.5em}
+    \newcommand{\algorithmiclinenumber}[1]{\footnotesize\ttfamily ##1:}
+    \newcommand{\algorithmickeyword}[1]{\textbf{\textsc{##1}}}
+
+    \newenvironment{algorithm}[1][]{%
+        \refstepcounter{algorithm}%
+        \begin{center}%
+        \begin{minipage}{0.95\linewidth}%
+        \hrule\smallskip%
+        \def\caption##1{\textbf{Algoritmo \thealgorithm: ##1}\par\smallskip}%
+    }{%
+        \smallskip\hrule%
+        \end{minipage}%
+        \end{center}%
+    }
+
+    \newenvironment{algorithmic}[1][]{%
+        \setcounter{algorithmicline}{0}%
+        \begin{list}{}{%
+            \leftmargin=3em%
+            \labelwidth=2.2em%
+            \labelsep=0.6em%
+            \itemsep=0.15em%
+            \parsep=0pt%
+            \topsep=0.25em%
+            \partopsep=0pt%
+            \listparindent=0pt%
+        }%
+    }{%
+        \end{list}%
+    }
+
+    \newcommand{\State}{\stepcounter{algorithmicline}\item[\algorithmiclinenumber{\thealgorithmicline}]}
+    \newcommand{\Require}{\State \algorithmickeyword{Require} }
+    \newcommand{\Ensure}{\State \algorithmickeyword{Ensure} }
+    \newcommand{\While}[1]{\State\algorithmickeyword{while} ##1 \algorithmickeyword{do}\begin{list}{}{% 
+        \leftmargin=\algorithmicindent\labelwidth=0pt\labelsep=0pt\itemsep=0.15em\parsep=0pt\topsep=0.1em\partopsep=0pt}}
+    \newcommand{\EndWhile}{\end{list}}
+    \newcommand{\If}[1]{\State\algorithmickeyword{if} ##1 \algorithmickeyword{then}\begin{list}{}{% 
+        \leftmargin=\algorithmicindent\labelwidth=0pt\labelsep=0pt\itemsep=0.15em\parsep=0pt\topsep=0.1em\partopsep=0pt}}
+    \newcommand{\EndIf}{\end{list}}
+    \newcommand{\For}[1]{\State\algorithmickeyword{for} ##1 \algorithmickeyword{do}\begin{list}{}{% 
+        \leftmargin=\algorithmicindent\labelwidth=0pt\labelsep=0pt\itemsep=0.15em\parsep=0pt\topsep=0.1em\partopsep=0pt}}
+    \newcommand{\EndFor}{\end{list}}
+    \newcommand{\Comment}[1]{\hfill\textit{// ##1}}
+    \newcommand{\Return}{\algorithmickeyword{return} }
+}
+
 % Garante a carga explícita do arquivo de siglas na geração da lista.
 \makeatletter
 \renewcommand{\@listofacronyms}{%

@@ -112,16 +112,16 @@ As principais diferenças entre LtCodes e OnlineCodes incluem:
 
 \begin{enumerate}
     \item \textbf{Modelo de Codificação}: LtCodes utilizam uma distribuição de grau otimizada fixa durante a codificação \cite{luby2002lt}, enquanto OnlineCodes 
-\tpermitem geração contínua e incremental de símbolos codificados.
+    permitem geração contínua e incremental de símbolos codificados.
     
     \item \textbf{Complexidade Computacional}: LtCodes apresentam complexidade linear média de O(k log k) para codificação e decodificação \cite{karp2004finite}, onde 
-\tk é o número de símbolos de origem. OnlineCodes apresentam complexidade similar ou superior dependendo da implementação.
+    $k$ é o número de símbolos de origem. OnlineCodes apresentam complexidade similar ou superior dependendo da implementação.
     
-    \item \textbf{Overhead e Taxa de Codificação}: LtCodes requerem apenas um pequeno overhead além dos k símbolos originais (aproximadamente 5-10\%) \cite{luby2002lt}, 
-\tenquanto OnlineCodes apresentam características de overhead distintas conforme a aplicação.
+    \item \textbf{Overhead e Taxa de Codificação}: LtCodes requerem apenas um pequeno overhead além dos $k$ símbolos originais (aproximadamente 5-10\%) \cite{luby2002lt}, 
+    enquanto OnlineCodes apresentam características de overhead distintas conforme a aplicação.
     
     \item \textbf{Aplicabilidade}: LtCodes são ideais para transmissão de dados de tamanho conhecido \cite{luby2002lt}, enquanto OnlineCodes são especialmente adequados 
-\tpara streaming de dados contínuo e de tamanho desconhecido \cite{fountain2007introduction}.
+    para streaming de dados contínuo e de tamanho desconhecido \cite{fountain2007introduction}.
 \end{enumerate}
 
 \subsection{Predominância de LtCodes}
@@ -165,8 +165,7 @@ Esta estrutura garante que o resultado da operação de módulo, $m(x) \bmod p(x
 A abordagem mais direta manipula os polinômios como vetores de seus coeficientes binários. O Algoritmo \ref{alg:polydiv_vector} descreve este processo, onde a divisão é realizada através de uma série de operações XOR e deslocamentos sobre os coeficientes.
 
 \begin{algorithm}[H]
-\caption{Resto polinomial em GF(2) com vetores de coeficientes}
-\label{alg:polydiv_vector}
+\textbf{Algoritmo \thealgorithm: Resto polinomial em GF(2) com vetores de coeficientes}\label{alg:polydiv_vector}\par\smallskip
 \begin{algorithmic}[1]
 \Require $\mathbf{m}$: coeficientes do dividendo, $\mathbf{p}$: coeficientes do divisor
 \Ensure $\mathbf{r} = m(x) \bmod p(x)$
@@ -198,8 +197,7 @@ A abordagem mais direta manipula os polinômios como vetores de seus coeficiente
 Embora funcional, esta abordagem pode ser ineficiente em linguagens de alto nível, pois envolve a manipulação de listas ou vetores com laços explícitos. Uma otimização significativa consiste em representar os polinômios como números inteiros, onde cada bit corresponde a um coeficiente. Desta forma, as operações polinomiais são mapeadas para operações bit-a-bit nativas do processador, como XOR e deslocamento de bits (`<<`), que são consideravelmente mais rápidas. O Algoritmo \ref{alg:polydiv_int} ilustra esta técnica, que é padrão em implementações de alto desempenho de códigos cíclicos \cite{peterson1961cyclic}.
 
 \begin{algorithm}[H]
-\caption{Resto polinomial em GF(2) usando representação inteira}
-\label{alg:polydiv_int}
+\textbf{Algoritmo \thealgorithm: Resto polinomial em GF(2) usando representação inteira}\label{alg:polydiv_int}\par\smallskip
 \begin{algorithmic}[1]
 \Require $\mathbf{m}$: coeficientes do dividendo, $\mathbf{p}$: coeficientes do divisor
 \Ensure $\mathbf{r} = m(x) \bmod p(x)$
@@ -229,8 +227,8 @@ Embora funcional, esta abordagem pode ser ineficiente em linguagens de alto nív
 \end{algorithmic}
 \end{algorithm}
 
-A superioridade do segundo algoritmo reside na substituição de laços e acessos a listas por operações de palavras de máquina. Enquanto o primeiro método incorre no overhead da interpretação de código Python para cada acesso a um coeficiente, o segundo delega o trabalho pesado para operações de baixo nível, executadas diretamente em hardware. Para polinômios de grau elevado, a diferença de desempenho é substancial, tornando a representação inteira a escolha preferencial para aplicações práticas.
-
+Enquanto o primeiro método possui o overhead da interpretação de código Python para cada acesso a um coeficiente, o segundo utiliza operações de número inteiro, executadas diretamente em hardware. Para polinômios de grau elevado, a diferença 
+de desempenho é substancial, tornando a representação inteira a escolha preferencial para aplicações práticas.
 
 \section{Arquitetura proposta}%
 \begin{figure}[!ht]
