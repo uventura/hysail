@@ -19,7 +19,7 @@ Seu funcionamento é estruturado em torno de alguns fundamentos principais:
 Considerando estes pontos, é notável que parte do processo de validação é concentrado
 ao lado do usuário, pois, ele é responsável por processos de geração, validação, upload e download.
 O servidor apenas armazena as informações, contudo, ainda há uma sobrecarga de responsabilidades
-ao lado do usuário, principalmente se existem muitos dados que são distribuidos e validades. Em
+ao lado do usuário, principalmente se existem muitos dados que são distribuidos e validados. Em
 vista da possível problemática, o presente trabalho visa propor uma solução que atende os seguintes
 critérios:
 
@@ -78,18 +78,18 @@ quão difícil é encontrar um hash válido para o bloco.
 
 Como não há método eficiente conhecido para prever qual nonce produzirá um hash válido,
 a busca ocorre por tentativa e erro, com alto custo computacional. O efeito de segurança
-é econômico: reescrever blocos antigos exigiria refazer esse trabalho e ainda acompanhar
+é econômico, reescrever blocos antigos exigiria refazer esse trabalho e ainda acompanhar
 o ritmo de geração de novos blocos da rede.
 
-Esse modelo combina três propriedades relevantes para o
-presente trabalho: integridade dos registros, rastreabilidade das operações e redução
+Esse modelo combina propriedades relevantes para o
+presente trabalho, integridade dos registros, rastreabilidade das operações e redução
 de dependência de uma autoridade única para validação. Assim, eventos importantes
 (como envio de evidências, confirmação de serviço e liquidação de pagamento) podem ser
 registrados de forma verificável por qualquer parte autorizada a consultar a rede.
 
 Como exemplo, considere uma auditoria periódica de
 um arquivo distribuído entre servidores. Em cada rodada, o provedor envia a evidência
-de disponibilidade, e o sistema registra na \emph{blockchain} três informações: identificador
+de disponibilidade, e o sistema registra na \emph{blockchain} o identificador
 do arquivo, hash da evidência e \emph{timestamp} da submissão.
 
 Se alguém tentar alterar depois o resultado de uma rodada (por exemplo, para simular que
@@ -167,19 +167,23 @@ transferência de valores, passam a integrar o estado global da rede.
 \label{fig:smart-contract-fluxo}
 \end{figure}
 
-\emph{Smart contracts} são relevantes por três
-razões:
-1. Permitem explicitar regras de cobrança e distribuição de incentivos
-de forma transparente, com menor dependência processos manuais para transações e validação.
-2. Permitem automatizar pagamentos condicionados a evidências de serviço, o que está
-alinhado ao objetivo de vincular remuneração à disponibilidade real dos dados.
-3. Favorecem auditoria posterior, pois as decisões de transação ficam registradas na rede
+\emph{Smart contracts} são relevantes por algumas razões:
+\begin{itemize}
+	\item Permitem explicitar regras de cobrança e distribuição de incentivos (recompensas que estimulam a participação correta dos agentes)
+	de forma transparente, com menor dependência processos manuais para transações e validação.
+	\item Permitem automatizar pagamentos condicionados a evidências de serviço, o que está
+	alinhado ao objetivo de vincular remuneração à disponibilidade real dos dados.
+	\item Favorecem auditoria posterior, pois as decisões de transação ficam registradas na rede
+	para consulta pública.
+\end{itemize}
 \cite{buterin2014next,antonopoulos2018mastering}.
 
-Ainda assim, o uso de \emph{smart contracts} impõe limitações práticas. Custos de execução,
-restrições de desempenho e riscos de implementação (como erros lógicos difíceis de
-reverter) exigem cuidado no projeto e na validação do código. Por isso, recomenda-se o
-uso de testes, auditorias e mecanismos de contingência. Assim, \emph{smart contracts}
+Ainda assim, o uso de \emph{smart contracts} impõe limitações práticas:
+\begin{itemize}
+	\item Custos de execução: cada operação em um contrato consome "gás", que é pago em Ether. Operações complexas ou frequentes podem gerar custos significativos.
+	\item Restrições de desempenho: a execução de contratos é limitada por blocos e pela capacidade da rede, o que pode introduzir latência e limitar a escalabilidade.
+	\item Riscos de implementação: erros no código do contrato podem levar a falhas de segurança, perda de fundos ou comportamento inesperado, e uma vez implantados, os contratos são imutáveis.
+\end{itemize}
+Por isso, recomenda-se o uso de testes, auditorias e mecanismos de contingência. Assim, \emph{smart contracts}
 devem ser entendidos como uma camada complementar de execução verificável, e não
 como substituição completa de mecanismos institucionais.
-

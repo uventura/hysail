@@ -8,6 +8,15 @@
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit}
 
+% Garante a carga explícita do arquivo de siglas na geração da lista.
+\makeatletter
+\renewcommand{\@listofacronyms}{%
+    \@inputTeXFile{siglas}%
+    \glsaddallunused%
+    \printglossary[type=\acronymtype]%
+}
+\makeatother
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Informações do Trabalho
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -29,10 +38,10 @@
 % Texto
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}%
-    \capitulo{1_Introducao}{Introdução sobre o HySail}%
+    \capitulo{1_Introducao}{Apresentação}%
     \capitulo{3_Hysail}{HySail}%
     \capitulo{2_Trabalhos_Relacionados}{Trabalhos Relacionados}%
-    \capitulo{4_Apresentacao}{Utilização de Blockchain como meio de auditoria para o HySail}%
+    \capitulo{4_Metodologia}{Metodologia}%
     \capitulo{5_Resultados}{Resultados}%
 
     \makeatletter
