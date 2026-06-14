@@ -4,7 +4,7 @@ apresentados os principais aspectos da nova arquitetura proposta.
 
 \section{LtCode e OnlineCodes}
 
-Os erasure codes desempenham um papel fundamental em sistemas distribuídos modernos, particularmente em ambientes blockchain e de armazenamento distribuído. Entre as várias famílias de erasure codes, os LtCodes (Luby Transform codes) e OnlineCodes representam duas abordagens distintas para o problema de recuperação de dados em cenários de falhas parciais.
+Os \emph{erasure codes} desempenham um papel fundamental em sistemas distribuídos modernos, particularmente em ambientes blockchain e de armazenamento distribuído. Entre as várias famílias de \emph{erasure codes}, os \emph{LtCodes} (Luby Transform codes) e \emph{OnlineCodes} representam duas abordagens distintas para o problema de recuperação de dados em cenários de falhas parciais.
 
 \subsection{Definições e Características}
 
@@ -14,9 +14,9 @@ Os erasure codes desempenham um papel fundamental em sistemas distribuídos mode
 
 \subsection{Robust Soliton Distribution}
 
-Nos LtCodes, a escolha do grau de cada símbolo codificado é controlada pela robust Soliton distribution, proposta para melhorar o desempenho de decodificação em tamanho finito \cite{luby2002lt,karp2004finite}. A construção parte de duas distribuições: a distribuição de Soliton ideal $\rho(d)$ e um termo corretivo $\tau(d)$.
+Nos \emph{LtCodes}, a escolha do grau de cada símbolo codificado é controlada pela \emph{robust Soliton distribution}, proposta para melhorar o desempenho de decodificação em tamanho finito \cite{luby2002lt,karp2004finite}. A construção parte de duas distribuições: a distribuição de Sóliton ideal $\rho(d)$ e um termo corretivo $\tau(d)$.
 
-Para $k$ simbolos de origem, a distribuicao ideal e dada por:
+Para $k$ símbolos de origem, a distribuição ideal é dada por:
 
 \begin{equation}
 \rho(d) = \begin{cases}
