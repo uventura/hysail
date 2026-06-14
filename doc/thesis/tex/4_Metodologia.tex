@@ -8,13 +8,15 @@ Os \emph{erasure codes} desempenham um papel fundamental em sistemas distribuíd
 
 \subsection{Definições e Características}
 
-\textbf{LtCodes} pertencem à classe dos códigos fountain digitais (digital fountain codes), baseados na transformada de Luby, introduzidos por Michael Luby em 2002 \cite{luby2002lt}. Esses códigos são construídos randomicamente durante o processo de codificação, onde cada símbolo codificado é gerado através da combinação linear de um número variável de símbolos de origem. A distribuição de grau é otimizada para minimizar o número de símbolos necessários para a recuperação completa dos dados, adotando a distribuição de grau de Sóliton robusta (robust Soliton distribution), isto é, a distribuição de Sóliton ideal acrescida de um termo corretivo para elevar a probabilidade de decodificação completa com baixo overhead \cite{shokrollahi2006raptor}.
+\textbf{LtCodes} pertencem à classe dos códigos fountain digitais (digital fountain codes), baseados na transformada de Luby, introduzidos por Michael Luby em 2002 \cite{luby2002lt}. Esses códigos são construídos randomicamente durante o processo de codificação, onde cada símbolo codificado é gerado através da combinação linear de um número variável de símbolos de origem.
 
-\textbf{OnlineCodes}, por sua vez, foram desenvolvidos para oferecer capacidades incrementais de codificação e decodificação \cite{peleg2004online}. Esses códigos permitem que o processo de codificação ocorra de forma contínua, com a possibilidade de gerar símbolos codificados indefinidamente, enquanto mantêm a garantia de recuperabilidade. A característica fundamental dos OnlineCodes é sua natureza online, permitindo processar dados conforme chegam, sem necessidade de acesso aleatório ou retorno aos dados anteriores.
+A distribuição de grau (quantidade de símbolos que serão combinados) é otimizada para minimizar o número de símbolos necessários para a recuperação completa dos dados, adotando a distribuição de grau de Soliton robusta (robust Soliton distribution), isto é, a distribuição de Soliton ideal acrescida de um termo corretivo para elevar a probabilidade de decodificação completa com baixo overhead \cite{shokrollahi2006raptor}.
+
+\textbf{OnlineCodes}, por sua vez, foram desenvolvidos para oferecer capacidades incrementais de codificação e decodificação \cite{maymounkov2002online}. Esses códigos permitem que o processo de codificação ocorra de forma contínua, com a possibilidade de gerar símbolos codificados indefinidamente, enquanto mantêm a garantia de recuperabilidade. A característica fundamental dos OnlineCodes é sua natureza online, permitindo processar dados conforme chegam, sem necessidade de acesso aleatório ou retorno aos dados anteriores.
 
 \subsection{Robust Soliton Distribution}
 
-Nos \emph{LtCodes}, a escolha do grau de cada símbolo codificado é controlada pela \emph{robust Soliton distribution}, proposta para melhorar o desempenho de decodificação em tamanho finito \cite{luby2002lt,karp2004finite}. A construção parte de duas distribuições: a distribuição de Sóliton ideal $\rho(d)$ e um termo corretivo $\tau(d)$.
+Nos \emph{LtCodes}, a escolha do grau de cada símbolo codificado (bloco de bytes do arquivo, usado como unidade de codificação e decodificação) é controlada pela \emph{robust Soliton distribution}, proposta para melhorar o desempenho de decodificação em tamanho finito \cite{luby2002lt,karp2004finite}. A construção parte de duas distribuições: a distribuição de Soliton ideal $\rho(d)$ e um termo corretivo $\tau(d)$.
 
 Para $k$ símbolos de origem, a distribuição ideal é dada por:
 
@@ -43,19 +45,13 @@ A robust Soliton distribution final é a normalização:
 
 Essa formulação aumenta a probabilidade de existência de símbolos de grau baixo durante a decodificação por \emph{belief propagation}, reduzindo o risco de estagnação do processo e mantendo baixo overhead de recepção \cite{luby2002lt,hyytia2007analysis}.
 
-\subsection{Operações Matemáticas}
-
-\subsubsection{LtCodes}
-
-Os LtCodes utilizam operações XOR iterativas em corpos finitos (típicamente GF(2) para aplicações binárias). Seja $\mathbf{d} = (d_1, d_2, \ldots, d_k)$ o vetor 
-contendo os $k$ símbolos de origem, o processo de codificação gera $n$ símbolos codificados $\mathbf{c} = (c_1, c_2, \ldots, c_n)$ conforme:
+Os LtCodes utilizam operações XOR iterativas em corpos finitos (típicamente GF(2) para aplicações binárias). Seja $\mathbf{d} = (d_1, d_2, \ldots, d_k)$ o vetor contendo os $k$ símbolos de origem, o processo de codificação gera $n$ símbolos codificados $\mathbf{c} = (c_1, c_2, \ldots, c_n)$ conforme:
 
 \begin{equation}
 c_i = \bigoplus_{j \in S_i} d_j
 \end{equation}
 
-onde $\bigoplus$ denota a operação XOR (ou soma em GF(2)), e $S_i$ é um subconjunto de índices selecionados randomicamente de acordo com 
-uma distribuição de grau Soliton. O grau $|S_i|$ segue uma distribuição de probabilidade específica $\rho(d)$:
+onde $\bigoplus$ denota a operação XOR (ou soma em GF(2)), e $S_i$ é um subconjunto de índices selecionados randomicamente de acordo com uma distribuição de grau Soliton. O grau (quantidade de índices em $S_i$, isto é, quantos símbolos originais serão combinados) $|S_i|$ segue uma distribuição de probabilidade específica $\rho(d)$:
 
 \begin{equation}
 \rho(d) = \begin{cases}
@@ -64,10 +60,9 @@ uma distribuição de grau Soliton. O grau $|S_i|$ segue uma distribuição de p
 \end{cases}
 \end{equation}
 
-A decodificação procede iterativamente, identificando símbolos codificados com grau 1 (que correspondem diretamente a símbolos de origem) e propagando 
-a informação até recuperar todos os $k$ símbolos originais. Este processo é denominado \emph{belief propagation}.
+A decodificação procede iterativamente, identificando símbolos codificados com grau 1 (que correspondem diretamente a símbolos de origem) e propagando a informação até recuperar todos os $k$ símbolos originais. Este processo é denominado \emph{belief propagation}.
 
-\subsubsection{OnlineCodes}
+\section{OnlineCodes}
 
 Os OnlineCodes utilizam um sistema de equações lineares sobre corpos finitos, mas com uma estrutura mais rígida. Dado um vetor de 
 origem $\mathbf{d} = (d_1, d_2, \ldots, d_k)$, a codificação gera símbolos mediante:
@@ -100,7 +95,7 @@ c_1 \\ c_2 \\ \vdots \\ c_m
 onde $m \geq k$ é o número de símbolos codificados recebidos. A matriz de coeficientes $\mathbf{G}$ é invertível com alta probabilidade 
 quando $m > k$, permitindo recuperar os símbolos originais através de eliminação Gaussiana.
 
-\subsubsection{Comparação das Operações}
+\subsection{Comparação das Operações}
 
 A diferença fundamental reside na \textbf{iteratividade vs. linearidade}:
 \begin{itemize}
@@ -116,17 +111,17 @@ A diferença fundamental reside na \textbf{iteratividade vs. linearidade}:
 As principais diferenças entre LtCodes e OnlineCodes incluem:
 
 \begin{enumerate}
-    \item \textbf{Modelo de Codificação}: LtCodes utilizam uma distribuição de grau otimizada fixa durante a codificação, enquanto OnlineCodes 
-	permitem geração contínua e incremental de símbolos codificados.
+    \item \textbf{Modelo de Codificação}: LtCodes utilizam uma distribuição de grau otimizada fixa durante a codificação \cite{luby2002lt}, enquanto OnlineCodes 
+\tpermitem geração contínua e incremental de símbolos codificados.
     
-    \item \textbf{Complexidade Computacional}: LtCodes apresentam complexidade linear média de O(k log k) para codificação e decodificação, onde 
-	k é o número de símbolos de origem. OnlineCodes têm complexidade superior, sendo geralmente O(k log² k).
+    \item \textbf{Complexidade Computacional}: LtCodes apresentam complexidade linear média de O(k log k) para codificação e decodificação \cite{karp2004finite}, onde 
+\tk é o número de símbolos de origem. OnlineCodes apresentam complexidade similar ou superior dependendo da implementação.
     
-    \item \textbf{Overhead e Taxa de Codificação}: LtCodes requerem apenas um pequeno overhead além dos k símbolos originais (aproximadamente 5-10\%), 
-	enquanto OnlineCodes podem exigir um overhead maior em certas aplicações.
+    \item \textbf{Overhead e Taxa de Codificação}: LtCodes requerem apenas um pequeno overhead além dos k símbolos originais (aproximadamente 5-10\%) \cite{luby2002lt}, 
+\tenquanto OnlineCodes apresentam características de overhead distintas conforme a aplicação.
     
-    \item \textbf{Aplicabilidade}: LtCodes são ideais para transmissão de dados de tamanho conhecido, enquanto OnlineCodes são especialmente adequados 
-	para streaming de dados contínuo e de tamanho desconhecido.
+    \item \textbf{Aplicabilidade}: LtCodes são ideais para transmissão de dados de tamanho conhecido \cite{luby2002lt}, enquanto OnlineCodes são especialmente adequados 
+\tpara streaming de dados contínuo e de tamanho desconhecido \cite{fountain2007introduction}.
 \end{enumerate}
 
 \subsection{Predominância de LtCodes}
@@ -140,9 +135,102 @@ Atualmente, os LtCodes e suas evoluções (como Rateless codes e Raptor codes) s
     \item \textbf{Desempenho em Redes Reais}: LtCodes apresentam melhor desempenho em cenários de perdas de pacotes aleatórias típicas de redes reais, 
 	particularmente em comunicações sem fio e multicast.
     
-    \item \textbf{Aplicação em Blockchains e Sistemas Distribuídos}: A comunidade de blockchains e armazenamento distribuído adotou amplamente LtCodes 
+    \item \textbf{Aplicação em Blockchains e Sistemas Distribuídos}: No contexto de blockchains e armazenamento distribuído, adotou-se amplamente LtCodes 
 	(frequentemente na forma de Raptor ou Reed-Solomon) para garantir disponibilidade e recuperabilidade de dados \cite{blaum2006codes}.
 \end{enumerate}
+
+Portanto, para a nova arquitetura proposta, a escolha de LtCodes é justificada por sua eficiência comprovada, ampla adoção e 
+adequação para cenários de armazenamento distribuído e blockchain, onde a recuperação rápida e confiável de dados é essencial.
+
+\section{Otimização da Divisão Polinomial no Corpo de Galois através de números inteiros}
+
+A divisão polinomial no corpo de Galois de dois elementos, GF(2), é uma operação aritmética fundamental em diversas áreas da computação, como em códigos de checagem de redundância cíclica (CRC), códigos corretores de erro e criptografia. Neste corpo, os polinômios têm coeficientes que só podem ser 0 ou 1.
+
+A principal característica de GF(2) é que tanto a adição quanto a subtração são equivalentes à operação lógica XOR (OU exclusivo). Isso ocorre porque, no corpo, $1+1=0$. Consequentemente, o processo de divisão longa de polinômios, que tradicionalmente envolve subtrações, é simplificado. Em vez de subtrair, aplica-se a operação XOR entre os coeficientes do dividendo e do divisor alinhado. O objetivo, assim como na divisão aritmética convencional, é encontrar um quociente e um resto, onde o grau do resto seja menor que o grau do divisor.
+
+Dados dois polinômios $m(x)$ (dividendo) e $p(x)$ (divisor) com coeficientes em GF(2), a divisão polinomial busca encontrar um polinômio quociente $q(x)$ e um polinômio resto $r(x)$ que satisfaçam a seguinte equação:
+
+\begin{equation}
+m(x) = q(x) \cdot p(x) \oplus r(x)
+\end{equation}
+
+onde $\oplus$ representa a adição polinomial (XOR coeficiente a coeficiente) e a condição principal é que o grau do resto seja estritamente menor que o grau do divisor:
+
+\begin{equation}
+\text{grau}(r(x)) < \text{grau}(p(x))
+\end{equation}
+
+Esta estrutura garante que o resultado da operação de módulo, $m(x) \bmod p(x)$, seja único e bem definido.
+
+A abordagem mais direta manipula os polinômios como vetores de seus coeficientes binários. O Algoritmo \ref{alg:polydiv_vector} descreve este processo, onde a divisão é realizada através de uma série de operações XOR e deslocamentos sobre os coeficientes.
+
+\begin{algorithm}[H]
+\caption{Resto polinomial em GF(2) com vetores de coeficientes}
+\label{alg:polydiv_vector}
+\begin{algorithmic}[1]
+\Require $\mathbf{m}$: coeficientes do dividendo, $\mathbf{p}$: coeficientes do divisor
+\Ensure $\mathbf{r} = m(x) \bmod p(x)$
+\State $M \gets \text{copia}(\mathbf{m})$
+\State $P \gets \text{copia}(\mathbf{p})$
+
+\While{$P \neq \emptyset$ \textbf{e} $\text{ultimo}(P)=0$}
+    \State remover\_ultimo($P$)
+\EndWhile
+
+\If{$P = \emptyset$}
+    \State \textbf{erro}: divisão por polinômio nulo
+\EndIf
+
+\While{$|M| \ge |P|$}
+    \If{$\text{ultimo}(M)=1$}
+        \State $o \gets |M| - |P|$ \Comment{deslocamento/alinhamento dos graus}
+        \For{$i \gets 0$ \textbf{até} $|P|-1$}
+            \State $M[o+i] \gets M[o+i] \oplus P[i]$
+        \EndFor
+    \EndIf
+    \State remover\_ultimo($M$)
+\EndWhile
+
+\State \Return $M$
+\end{algorithmic}
+\end{algorithm}
+
+Embora funcional, esta abordagem pode ser ineficiente em linguagens de alto nível, pois envolve a manipulação de listas ou vetores com laços explícitos. Uma otimização significativa consiste em representar os polinômios como números inteiros, onde cada bit corresponde a um coeficiente. Desta forma, as operações polinomiais são mapeadas para operações bit-a-bit nativas do processador, como XOR e deslocamento de bits (`<<`), que são consideravelmente mais rápidas. O Algoritmo \ref{alg:polydiv_int} ilustra esta técnica, que é padrão em implementações de alto desempenho de códigos cíclicos \cite{peterson1961cyclic}.
+
+\begin{algorithm}[H]
+\caption{Resto polinomial em GF(2) usando representação inteira}
+\label{alg:polydiv_int}
+\begin{algorithmic}[1]
+\Require $\mathbf{m}$: coeficientes do dividendo, $\mathbf{p}$: coeficientes do divisor
+\Ensure $\mathbf{r} = m(x) \bmod p(x)$
+\State $D_c \gets \text{copia}(\mathbf{m})$
+\State $V_c \gets \text{copia}(\mathbf{p})$
+
+\While{$V_c \neq \emptyset$ \textbf{e} $\text{ultimo}(V_c)=0$}
+    \State remover\_ultimo($V_c$)
+\EndWhile
+
+\If{$V_c = \emptyset$}
+    \State \textbf{erro}: divisão por polinômio nulo
+\EndIf
+
+\State $D \gets \text{PolyCoeffsToInt}(D_c)$
+\State $V \gets \text{PolyCoeffsToInt}(V_c)$
+\State $g_V \gets \text{bit\_length}(V) - 1$
+\State $R \gets D$
+
+\While{$\text{bit\_length}(R) > g_V$}
+    \State $s \gets \text{bit\_length}(R) - \text{bit\_length}(V)$
+    \State $R \gets R \oplus (V \ll s)$
+\EndWhile
+
+\State $w \gets \min(|D_c|,\ |V_c|-1)$
+\State \Return $\text{IntToPolyCoeffs}(R,\ w)$
+\end{algorithmic}
+\end{algorithm}
+
+A superioridade do segundo algoritmo reside na substituição de laços e acessos a listas por operações de palavras de máquina. Enquanto o primeiro método incorre no overhead da interpretação de código Python para cada acesso a um coeficiente, o segundo delega o trabalho pesado para operações de baixo nível, executadas diretamente em hardware. Para polinômios de grau elevado, a diferença de desempenho é substancial, tornando a representação inteira a escolha preferencial para aplicações práticas.
+
 
 \section{Arquitetura proposta}%
 \begin{figure}[!ht]
