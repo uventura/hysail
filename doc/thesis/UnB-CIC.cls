@@ -136,9 +136,9 @@
 %%
 %% --- Pacotes requeridos ---
 %%
-
-
-\RequirePackage[brazil,american]{babel}% Idiomas
+\RequirePackage[american]{babel}% Idiomas
+\let\captionsbrazil\captionsamerican
+\let\datebrazil\dateamerican
 \RequirePackage[fixlanguage]{babelbib}%  Idioma das referências
 \RequirePackage[utf8]{inputenc}%         Arquivos na codificação UTF-8
 \RequirePackage[T1]{fontenc}%            Habilita busca com caracteres latinos
@@ -894,8 +894,8 @@
 	\@IncluirSecao{resumo}%
 	\selectlanguage{american}%
 	\@IncluirSecao{abstract}%
-	\selectlanguage{brazil}%
-    \selectbiblanguage{brazil}%
+	\selectlanguage{american}%
+    \selectbiblanguage{american}%
 	\@erroSeNaoExiste{bibliografia.bib}%
 
 	\tableofcontents%

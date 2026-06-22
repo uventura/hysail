@@ -1,0 +1,35 @@
+\section{Trabalhos Relacionados}%
+
+A utilização de blockchain em protocolos de PoR pode parecer contraintuitiva à primeira vista. Contudo, como fundamento da arquitetura e da solução aqui propostas, a análise será direcionada ao contexto do Hysail, com destaque para contribuições que empregam blockchain em PoR, viabilizam auditorias verificáveis e reduzem a dependência de terceiros centralizados. A partir desses estudos, será possível compreender limitações e contextos de aplicação desses conceitos.
+
+\subsection*{1. PoR Baseados em Blockchain}
+Estes trabalhos visam substituir o Auditor de Terceira Parte (TPA) centralizado por uma rede blockchain, mitigando riscos de colusão e pontos únicos de falha.
+\begin{itemize}
+    \item \textbf{BOSSA \cite{chen2021bossa}:} Propõe um sistema descentralizado para provas de recuperabilidade e replicação baseado em \textbf{smart contracts do Ethereum}.
+O framework separa o armazenamento dos dados originais (em servidores) e das réplicas (em nós chamados "farmers"), utilizando a blockchain para automatizar a auditoria e gerenciar incentivos financeiros baseados na \textbf{"taxa de contribuição"} de cada nó.
+    \item \textbf{Public Proofs of Data Replication \cite{shen2024public}:} Introduz um protocolo que utiliza \textbf{provas sucintas não interativas} para tornar a verificação de múltiplas réplicas pública e amigável ao usuário.
+O algoritmo impõe custo de comunicação constante para o cliente e evita que provedores economizem armazenamento ao replicar dados "on-the-fly".
+\end{itemize}
+
+\subsection*{2. Auditoria Contínua e Privacidade com Conhecimento Zero}
+O foco aqui é garantir a disponibilidade ininterrupta dos dados sem comprometer a privacidade do usuário perante os mineradores ou auditores da rede.
+\begin{itemize}
+    \item \textbf{Protocolo de Integridade Contínua \cite{huang2022blockchain}:} Integra \textbf{Funções de Atraso Verificáveis (VDF)} com PoR para forçar o servidor a gerar provas sequencialmente, garantindo a \textbf{disponibilidade contínua} dos arquivos.
+    Utiliza técnicas de \textbf{Conhecimento Zero (ZK)} para assegurar que os mineradores que verificam as provas on-chain não consigam extrair o conteúdo dos dados dos usuários a partir do fluxo de comunicação.
+\end{itemize}
+
+\subsection*{3. Pagamentos Justos e Cenários Multi-Usuário (Pay-Per-Proof)}
+Soluções que integram mecanismos econômicos para garantir que o serviço de armazenamento seja remunerado apenas mediante a comprovação da integridade.
+\begin{itemize}
+    \item \textbf{OMTPoR \cite{cui2024payperproof}:} Introduz o conceito de \textbf{"Pay-Per-Proof"}, no qual o servidor em nuvem recebe o pagamento apenas após a verificação bem-sucedida da prova pelos mineradores da blockchain.
+    O esquema suporta \textbf{múltiplos usuários} que possuem o mesmo arquivo (\textbf{desduplicação}), permitindo que compartilhem o custo da auditoria e reduzam a redundância de tags de verificação.
+    \item \textbf{BAA - Blockchain-based Automatic Audit \cite{chen2024general}:} Apresenta um esquema geral que utiliza \textbf{smart contracts Turing-completos} para gerenciar todo o ciclo de vida da tarefa de armazenamento, desde a criação até o pagamento faseado.
+    O modelo utiliza \textbf{depósitos de garantia} para punir comportamentos maliciosos do servidor.
+\end{itemize}
+
+\subsection*{4. Frameworks de Notarização e Integridade de Registros}
+Trabalhos que utilizam a imutabilidade da blockchain para criar registros históricos invioláveis dos processos de auditoria.
+\begin{itemize}
+    \item \textbf{PoR Baseado em Árvore de Merkle \cite{ren2022blockchain}:} Utiliza a blockchain para manter registros constantes dos protocolos de PoR, armazenando a \textbf{raiz de uma árvore de Merkle} das etiquetas de autenticação on-chain para garantir a rastreabilidade de blocos modificados.
+    Isso assegura que o estado da auditoria não possa ser adulterado após a geração.
+\end{itemize}
