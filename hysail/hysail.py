@@ -32,8 +32,7 @@ def _create_progress() -> Progress:
 
 
 def _enable_debug_mode(debug):
-    if debug:
-        set_debugging(True)
+    set_debugging(debug)
 
 
 @click.group()

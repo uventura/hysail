@@ -138,6 +138,31 @@ def test_when_cli_encode_receives_debug_flag_then_debug_mode_is_enabled(
     set_debugging(False)
 
 
+def test_when_cli_encode_runs_without_debug_flag_then_debug_mode_is_disabled(
+    tmp_path, monkeypatch
+):
+    input_file = tmp_path / "payload.txt"
+    server_list_file = tmp_path / "servers.json"
+    input_file.write_bytes(b"payload")
+    server_list_file.write_text(
+        '{"servers": [{"id": 1, "storage_location": "server-1"}]}'
+    )
+
+    DummyHysailEncode.return_value = 1
+    set_debugging(True)
+
+    monkeypatch.setattr("hysail.hysail.HysailEncode", DummyHysailEncode)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        main,
+        ["encode", str(input_file), "--server-list", str(server_list_file)],
+    )
+
+    assert result.exit_code == 0
+    assert is_debugging() is False
+
+
 def test_when_cli_decode_receives_debug_flag_then_debug_mode_is_enabled(
     tmp_path, monkeypatch
 ):
