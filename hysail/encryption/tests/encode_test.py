@@ -1,4 +1,5 @@
 import random
+from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
@@ -168,3 +169,18 @@ def test_when_indices_order_forced_then_packet_respects_that_order():
         expected = bytes(x ^ y for x, y in zip(expected, blocks[1]))
 
         assert pkt.data == expected
+
+
+def test_when_encoding_bad_apple_example_then_generates_packets():
+    repo_root = Path(__file__).resolve().parents[3]
+    sample_file = repo_root / "examples" / "bad_apple.mp4"
+    block_size = 1024
+
+    with open(sample_file, "rb") as file:
+        data = file.read(64 * 1024)
+
+    enc = Encode(data, block_size)
+
+    assert len(data) > 0
+    assert len(enc.packets) == enc.num_blocks * 6
+    assert all(isinstance(pkt.data, bytes) for pkt in enc.packets)
