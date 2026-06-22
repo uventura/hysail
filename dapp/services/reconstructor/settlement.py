@@ -8,7 +8,7 @@ from web3 import Web3
 
 from abi import DOWNLOAD_MANAGER_ABI
 from constants import JOB_ID_ENV_VAR
-from models import ChainContext, JobContext, RetrievedPacket, ReconstructorConfig
+from models import ChainContext, JobContext, RetrievedBlock, ReconstructorConfig
 
 
 class DownloadSettlementService:
@@ -25,7 +25,7 @@ class DownloadSettlementService:
             return None
 
     def settle_job(
-        self, manifest: dict, accepted_packets: list[RetrievedPacket], result_hash: str
+        self, manifest: dict, accepted_blocks: list[RetrievedBlock], result_hash: str
     ) -> tuple[int, list[str]]:
         chain_context = self._create_chain_context()
         job_context = self._load_job_context(chain_context)
@@ -33,11 +33,20 @@ class DownloadSettlementService:
         self._ensure_job_not_finalized(job_context)
 
         tx_hashes = [
-            self._accept_block(job_context, manifest["providerAddress"], packet)
-            for packet in accepted_packets
+            self._accept_block(
+                job_context, self._resolve_provider_address(manifest, block), block
+            )
+            for block in accepted_blocks
         ]
         tx_hashes.append(self._finalize_job(job_context, result_hash))
         return job_context.job_id, tx_hashes
+
+    def _resolve_provider_address(self, manifest: dict, block: RetrievedBlock) -> str:
+        provider_address = block.provider_address or manifest.get("providerAddress")
+        if provider_address:
+            return provider_address
+
+        raise RuntimeError(f"Missing provider address for block {block.block_id}")
 
     def _get_download_manager(self, web3: Web3):
         deployments = json.loads(self.config.deployments_path.read_text())
@@ -101,15 +110,15 @@ class DownloadSettlementService:
         self,
         job_context: JobContext,
         provider_address: str,
-        packet: RetrievedPacket,
+        block: RetrievedBlock,
     ) -> str:
         return self._send_transaction(
             job_context.chain_context,
             job_context.chain_context.download_manager.functions.acceptBlock(
                 job_context.job_id,
-                Web3.keccak(text=packet.block_id),
+                Web3.keccak(text=block.block_id),
                 Web3.to_checksum_address(provider_address),
-                packet.price_wei,
+                block.price_wei,
             ),
         )
 

@@ -16,7 +16,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Plot the robust soliton distribution for a given K, c and delta."
     )
-    parser.add_argument("--k", type=int, default=100, help="Number of source symbols (K).")
+    parser.add_argument(
+        "--k", type=int, default=100, help="Number of source symbols (K)."
+    )
     parser.add_argument(
         "--c",
         type=float,

@@ -14,13 +14,24 @@ from hysail.utils.padding import remove_padding
 
 
 class Decode:
-    def __init__(self, metadata_file, server_file):
-        self._servers = self._load_servers(server_file)
-        self._polynomials = []
-        self._local_blocks = {}
-        self._local_mac = []
+    def __init__(
+        self,
+        metadata_file=None,
+        server_file=None,
+        *,
+        polynomials=None,
+        local_blocks=None,
+        local_mac=None,
+    ):
+        self._servers = []
+        self._polynomials = polynomials or []
+        self._local_blocks = local_blocks or {}
+        self._local_mac = local_mac or {}
+        self._accepted_blocks = {}
 
-        self._load_from_metadata(metadata_file)
+        if metadata_file is not None and server_file is not None:
+            self._servers = self._load_servers(server_file)
+            self._load_from_metadata(metadata_file)
 
     def decode(self):
         data = self._retrieve_blocks()
@@ -28,6 +39,9 @@ class Decode:
         for msg_i in sorted(data.keys()):
             result += data[msg_i].data
         return remove_padding(result)
+
+    def get_accepted_blocks(self):
+        return list(self._accepted_blocks.values())
 
     def _retrieve_blocks(self):
         retrieved_data = {}
@@ -90,6 +104,11 @@ class Decode:
         if not isinstance(block, Block):
             self._challenge_server(block.server, block)
             data = block.server.download_block(block.index)
+            if (
+                block.block_id is not None
+                and block.block_id not in self._accepted_blocks
+            ):
+                self._accepted_blocks[block.block_id] = block
         else:
             data = block.data
 
@@ -108,7 +127,7 @@ class Decode:
         polynomial = self._polynomials[random_polynomial_index]
 
         answer = server.receive_challenge(polynomial, block.index)
-        macs = [self._local_mac[i][random_polynomial_index] for i in block.indices]
+        macs = [self._get_local_mac(i, random_polynomial_index) for i in block.indices]
         result = macs[0].mac
         for mac in macs[1:]:
             result = xor_bytes(result, mac.mac)
@@ -149,6 +168,12 @@ class Decode:
         self._local_blocks = self._build_local_blocks(metadata, server_cache)
         self._local_mac = self._build_local_mac(metadata)
 
+    def _get_local_mac(self, block_index, polynomial_index):
+        if isinstance(self._local_mac, list):
+            return self._local_mac[block_index][polynomial_index]
+
+        return self._local_mac[block_index][polynomial_index]
+
     def _build_local_blocks(self, metadata, server_cache):
         local_blocks = {}
         execution_logger.debug("Building local blocks from metadata")
@@ -183,25 +208,22 @@ class Decode:
     def _build_local_mac(self, metadata):
         if not metadata.blocks:
             execution_logger.debug("No local MAC entries found in metadata")
-            return []
+            return {}
 
-        num_blocks = max(block.block_index for block in metadata.blocks) + 1
-        local_mac = [
-            [None for _ in range(len(metadata.polynomials))] for _ in range(num_blocks)
-        ]
+        local_mac = {}
 
         execution_logger.debug(
-            f"Building local MAC matrix with {num_blocks} blocks and "
+            f"Building local MAC map with {max(block.block_index for block in metadata.blocks) + 1} blocks and "
             f"{len(metadata.polynomials)} polynomials"
         )
 
         for block_metadata in metadata.blocks:
-            local_mac[block_metadata.block_index][block_metadata.polynomial_index] = (
-                LocalMac(
-                    mac=block_metadata.mac_value,
-                    polynomial_index=block_metadata.polynomial_index,
-                    block_index=block_metadata.block_index,
-                )
+            local_mac.setdefault(block_metadata.block_index, {})[
+                block_metadata.polynomial_index
+            ] = LocalMac(
+                mac=block_metadata.mac_value,
+                polynomial_index=block_metadata.polynomial_index,
+                block_index=block_metadata.block_index,
             )
             execution_logger.debug(
                 "Generated local MAC: "
@@ -211,8 +233,8 @@ class Decode:
             )
 
         execution_logger.debug(
-            "Built local MAC matrix occupancy: "
-            f"{[sum(mac is not None for mac in row) for row in local_mac]}"
+            "Built local MAC map occupancy: "
+            f"{ {block_index: len(polynomials) for block_index, polynomials in local_mac.items()} }"
         )
 
         return local_mac

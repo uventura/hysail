@@ -8,6 +8,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from hysail.logger.logger import execution_logger
+from hysail.utils.debug import is_debugging
 
 
 def _graph_file_name(func):
@@ -39,6 +40,9 @@ def timeit(runs=1, detailed=False):
 
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+            if not is_debugging():
+                return func(*args, **kwargs)
+
             times = []
             for _ in range(runs):
                 start = time.perf_counter()

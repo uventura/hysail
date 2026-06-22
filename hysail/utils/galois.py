@@ -4,6 +4,7 @@ import secrets
 from hysail.constant import POLYNOMIAL_LAMBDA
 from hysail.utils.decorators import timeit
 
+
 def bytes_to_poly_coeffs(message_block):
     bits = np.unpackbits(np.frombuffer(message_block, dtype=np.uint8))
     # Reverse to align index with power of x (index 0 = x^0)
@@ -23,6 +24,7 @@ def _int_to_poly_coeffs(value, width):
         return np.array([], dtype=np.uint8)
 
     return np.array([(value >> index) & 1 for index in range(width)], dtype=np.uint8)
+
 
 @timeit(runs=1)
 def gf2_poly_mod(m_coeffs, p_coeffs):

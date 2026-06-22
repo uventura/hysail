@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import copy
 import hashlib
 import json
 from urllib.request import Request, urlopen
@@ -8,18 +7,61 @@ from urllib.request import Request, urlopen
 import numpy as np
 
 from errors import ValidationError
-from models import RetrievedPacket
-from hysail.utils.operators import xor_bytes
+from hysail.encryption.block import LocalBlock
+from hysail.encryption.decode import Decode
+from hysail.encryption.local_mac import LocalMac
+from models import RetrievedBlock
 
 
-class PacketRetrievalService:
+class ManifestBlockServer:
+    def __init__(
+        self, retrieval_service: "BlockRetrievalService", manifest: dict, block: dict
+    ):
+        self._retrieval_service = retrieval_service
+        self._manifest = manifest
+        self._block = block
+        self._storage_location = manifest["providerEndpoint"]
+
+    def download_block(self, block_index):
+        if block_index != self._block["packetIndex"]:
+            raise ValueError(f"Unexpected block index: {block_index}")
+
+        return self._retrieval_service.fetch_block_data(self._manifest, self._block)
+
+    def receive_challenge(self, polynomial, check_block_index):
+        if check_block_index != self._block["packetIndex"]:
+            raise ValueError(f"Unexpected block index: {check_block_index}")
+
+        return self._retrieval_service.challenge_block(
+            self._manifest,
+            self._block,
+            polynomial,
+        )
+
+
+class BlockRetrievalService:
     def load_manifest(self, manifest_path) -> dict:
         return json.loads(manifest_path.read_text())
 
-    def build_payload(self, retrieved_data: dict[int, RetrievedPacket]) -> bytes:
-        return b"".join(
-            retrieved_data[index].data for index in sorted(retrieved_data.keys())
+    def build_decoder(self, manifest: dict) -> Decode:
+        return Decode(
+            polynomials=self._build_polynomials(manifest),
+            local_blocks=self._build_local_blocks(manifest),
+            local_mac=self._build_local_mac(manifest),
         )
+
+    def build_accepted_blocks(self, decoder: Decode) -> list[RetrievedBlock]:
+        return [
+            RetrievedBlock(
+                block_index=block.index,
+                degree=block.degree,
+                indices=list(block.indices),
+                block_id=block.block_id,
+                price_wei=int(block.price_wei),
+                data=b"",
+            )
+            for block in decoder.get_accepted_blocks()
+        ]
 
     def sha256_hex(self, payload: bytes) -> str:
         return hashlib.sha256(payload).hexdigest()
@@ -32,59 +74,6 @@ class PacketRetrievalService:
             "Reconstructed payload hash mismatch: "
             f"expected {manifest['originalFileHash']}, got {payload_hash}"
         )
-
-    def retrieve_blocks(
-        self,
-        manifest: dict,
-    ) -> tuple[dict[int, RetrievedPacket], list[RetrievedPacket]]:
-        packets_by_degree: dict[int, list[dict]] = {}
-        for packet in manifest["packets"]:
-            packets_by_degree.setdefault(packet["degree"], []).append(
-                copy.deepcopy(packet)
-            )
-
-        num_blocks_to_retrieve = (
-            max(max(packet["indices"]) for packet in manifest["packets"]) + 1
-        )
-        retrieved_data: dict[int, RetrievedPacket] = {}
-        accepted_packets: dict[str, RetrievedPacket] = {}
-        degree = 1
-        stalled_cycles = 0
-        max_degree = max(packets_by_degree.keys())
-
-        while len(retrieved_data) < num_blocks_to_retrieve:
-            progress_made = False
-            for packet in list(packets_by_degree.get(degree, [])):
-                solvable_parts = self._count_solvable_parts(
-                    packet, set(retrieved_data.keys())
-                )
-                if solvable_parts == 0:
-                    continue
-
-                partial_packet = self._solve_partial_packet(
-                    packet, manifest, retrieved_data
-                )
-                partial_packet.degree = solvable_parts
-                self._append_partial_packet(packets_by_degree, partial_packet)
-                self._store_accepted_packet(accepted_packets, packet, partial_packet)
-
-                if solvable_parts == 1:
-                    retrieved_data[partial_packet.indices[0]] = partial_packet
-                    progress_made = True
-
-            degree, stalled_cycles = self._next_degree(
-                degree,
-                packets_by_degree,
-                progress_made,
-                stalled_cycles,
-            )
-
-            if stalled_cycles > max_degree:
-                raise ValidationError(
-                    "Unable to solve packets into a consistent reconstruction set"
-                )
-
-        return retrieved_data, list(accepted_packets.values())
 
     def _fetch_bytes(self, url: str) -> bytes:
         with urlopen(url) as response:
@@ -106,137 +95,80 @@ class PacketRetrievalService:
             result = np.bitwise_xor(result, np.array(mac, dtype=np.uint8))
         return result.tolist()
 
-    def _challenge_packet(self, manifest: dict, packet: dict) -> None:
+    def challenge_block(
+        self,
+        manifest: dict,
+        block: dict,
+        polynomial: np.ndarray,
+    ) -> np.ndarray:
         challenge_url = f"{manifest['providerEndpoint']}/challenge"
         block_macs = {
             entry["blockIndex"]: entry["macs"] for entry in manifest["blockMacs"]
         }
 
-        for polynomial_index, polynomial in enumerate(manifest["challengePolynomials"]):
-            expected = self._xor_mac_values(
-                [block_macs[index][polynomial_index] for index in packet["indices"]]
-            )
-            response = self._post_json(
-                challenge_url,
-                {"blockId": packet["blockId"], "polynomial": polynomial},
-            )["response"]
-            if response != expected:
-                raise ValidationError(
-                    "Block consistency check failed before download: "
-                    f"packet {packet['packetIndex']} polynomial {polynomial_index}"
-                )
+        response = self._post_json(
+            challenge_url,
+            {
+                "blockId": block["blockId"],
+                "polynomial": polynomial.tolist(),
+            },
+        )["response"]
 
-    def _count_solvable_parts(self, packet: dict, retrieved_indices: set[int]) -> int:
-        return len(packet["indices"]) - len(set(packet["indices"]) & retrieved_indices)
-
-    def _build_packet_record(
-        self,
-        packet: dict,
-        data: bytes,
-        indices: list[int] | None = None,
-        degree: int | None = None,
-    ) -> RetrievedPacket:
-        return RetrievedPacket(
-            packet_index=packet["packetIndex"],
-            degree=packet["degree"] if degree is None else degree,
-            indices=list(packet["indices"]) if indices is None else indices,
-            block_id=packet["blockId"],
-            price_wei=int(packet["priceWei"]),
-            data=data,
+        polynomial_index = self._find_polynomial_index(manifest, polynomial)
+        expected = self._xor_mac_values(
+            [block_macs[index][polynomial_index] for index in block["indices"]]
         )
+        if response != expected:
+            raise ValidationError(
+                "Block consistency check failed before download: "
+                f"block {block['packetIndex']} polynomial {polynomial_index}"
+            )
 
-    def _serialize_packet(self, packet: RetrievedPacket) -> dict:
-        return {
-            "packetIndex": packet.packet_index,
-            "degree": packet.degree,
-            "indices": list(packet.indices),
-            "blockId": packet.block_id,
-            "priceWei": str(packet.price_wei),
-            "data": packet.data,
-        }
+        return np.array(response, dtype=np.uint8)
 
-    def _fetch_packet_data(self, manifest: dict, packet: dict) -> bytes:
-        if "data" in packet:
-            return packet["data"]
-
-        self._challenge_packet(manifest, packet)
+    def fetch_block_data(self, manifest: dict, block: dict) -> bytes:
         return self._fetch_bytes(
-            f"{manifest['providerEndpoint']}/blocks/{packet['blockId']}"
+            f"{manifest['providerEndpoint']}/blocks/{block['blockId']}"
         )
 
-    def _reduce_packet_with_known_blocks(
-        self,
-        packet_data: bytes,
-        remaining_indices: list[int],
-        retrieved_data: dict[int, RetrievedPacket],
-    ) -> tuple[bytes, list[int]]:
-        reduced_data = packet_data
-        unresolved_indices = list(remaining_indices)
-        for index in list(unresolved_indices):
-            if index in retrieved_data:
-                reduced_data = xor_bytes(reduced_data, retrieved_data[index].data)
-                unresolved_indices.remove(index)
-        return reduced_data, unresolved_indices
+    def _build_polynomials(self, manifest: dict) -> list[np.ndarray]:
+        return [
+            np.array(polynomial, dtype=np.uint8)
+            for polynomial in manifest["challengePolynomials"]
+        ]
 
-    def _store_accepted_packet(
-        self,
-        accepted_packets: dict[str, RetrievedPacket],
-        packet: dict,
-        partial_packet: RetrievedPacket,
-    ) -> None:
-        if packet["blockId"] in accepted_packets or "data" in packet:
-            return
-
-        accepted_packets[packet["blockId"]] = self._build_packet_record(
-            packet,
-            data=partial_packet.data,
-        )
-
-    def _append_partial_packet(
-        self,
-        packets_by_degree: dict[int, list[dict]],
-        partial_packet: RetrievedPacket,
-    ) -> None:
-        packets_by_degree.setdefault(partial_packet.degree, []).append(
-            self._serialize_packet(partial_packet)
-        )
-
-    def _next_degree(
-        self,
-        degree: int,
-        packets_by_degree: dict[int, list[dict]],
-        progress_made: bool,
-        stalled_cycles: int,
-    ) -> tuple[int, int]:
-        next_degree = degree + 1
-        if next_degree <= max(packets_by_degree.keys()):
-            return next_degree, stalled_cycles
-
-        return 1, 0 if progress_made else stalled_cycles + 1
-
-    def _solve_partial_packet(
-        self,
-        packet: dict,
-        manifest: dict,
-        retrieved_data: dict[int, RetrievedPacket],
-    ) -> RetrievedPacket:
-        data = self._fetch_packet_data(manifest, packet)
-
-        remaining_indices = list(packet["indices"])
-        unique_indices = set(remaining_indices)
-        if len(unique_indices) == 1 and not unique_indices.issubset(retrieved_data):
-            return self._build_packet_record(
-                packet, data=data, indices=remaining_indices
+    def _build_local_blocks(self, manifest: dict) -> dict[int, list[LocalBlock]]:
+        local_blocks: dict[int, list[LocalBlock]] = {}
+        for block in manifest["packets"]:
+            local_blocks.setdefault(block["degree"], []).append(
+                LocalBlock(
+                    index=block["packetIndex"],
+                    degree=block["degree"],
+                    indices=list(block["indices"]),
+                    server=ManifestBlockServer(self, manifest, block),
+                    block_id=block["blockId"],
+                    price_wei=int(block["priceWei"]),
+                )
             )
+        return local_blocks
 
-        reduced_data, unresolved_indices = self._reduce_packet_with_known_blocks(
-            data,
-            remaining_indices,
-            retrieved_data,
-        )
+    def _build_local_mac(self, manifest: dict) -> dict[int, dict[int, LocalMac]]:
+        local_mac: dict[int, dict[int, LocalMac]] = {}
+        for block in manifest["blockMacs"]:
+            local_mac[block["blockIndex"]] = {
+                polynomial_index: LocalMac(
+                    mac=np.array(mac_value, dtype=np.uint8),
+                    polynomial_index=polynomial_index,
+                    block_index=block["blockIndex"],
+                )
+                for polynomial_index, mac_value in enumerate(block["macs"])
+            }
+        return local_mac
 
-        return self._build_packet_record(
-            packet,
-            data=reduced_data,
-            indices=unresolved_indices,
-        )
+    def _find_polynomial_index(self, manifest: dict, polynomial: np.ndarray) -> int:
+        polynomial_values = polynomial.tolist()
+        for index, candidate in enumerate(manifest["challengePolynomials"]):
+            if candidate == polynomial_values:
+                return index
+
+        raise ValidationError("Challenge polynomial not present in manifest")

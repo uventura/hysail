@@ -17,13 +17,14 @@ class ReconstructorConfig:
     manifest_path: Path = MANIFEST_PATH
     deployments_path: Path = DEPLOYMENTS_PATH
     output_dir: Path = OUTPUT_DIR
+    output_path: Path | None = None
     rpc_url: str = DEFAULT_RPC_URL
     private_key: str = DEFAULT_PRIVATE_KEY
 
 
 @dataclass
-class RetrievedPacket:
-    packet_index: int
+class RetrievedBlock:
+    block_index: int
     degree: int
     indices: list[int]
     block_id: str
