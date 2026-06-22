@@ -86,10 +86,7 @@ g_{m,1} & g_{m,2} & \cdots & g_{m,k}
 \begin{pmatrix}
 d_1 \\ d_2 \\ \vdots \\ d_k
 \end{pmatrix}
-=
-\begin{pmatrix}
-c_1 \\ c_2 \\ \vdots \\ c_m
-\end{pmatrix}
+= A
 \end{equation}
 
 onde $m \geq k$ é o número de símbolos codificados recebidos. A matriz de coeficientes $\mathbf{G}$ é invertível com alta probabilidade 
@@ -129,7 +126,7 @@ As principais diferenças entre LtCodes e OnlineCodes incluem:
 Atualmente, os LtCodes e suas evoluções (como Rateless codes e Raptor codes) são amplamente adotados na indústria devido a diversos fatores:
 
 \begin{enumerate}
-    \item \textbf{Eficiência Comprovada}: A eficiência de codificação e decodificação de LtCodes os torna práticos para implementações em larga escala, 
+    \item \textbf{Eficiência}: A eficiência de codificação e decodificação de LtCodes os torna práticos para implementações em larga escala, 
 	sendo utilizados em padrões como IETF RFC 5053 (Raptor Forward Error Correction) \cite{begen2011rfc}.
     
     \item \textbf{Desempenho em Redes Reais}: LtCodes apresentam melhor desempenho em cenários de perdas de pacotes aleatórias típicas de redes reais, 
@@ -194,7 +191,12 @@ A abordagem mais direta manipula os polinômios como vetores de seus coeficiente
 \end{algorithmic}
 \end{algorithm}
 
-Embora funcional, esta abordagem pode ser ineficiente em linguagens de alto nível, pois envolve a manipulação de listas ou vetores com laços explícitos. Uma otimização significativa consiste em representar os polinômios como números inteiros, onde cada bit corresponde a um coeficiente. Desta forma, as operações polinomiais são mapeadas para operações bit-a-bit nativas do processador, como XOR e deslocamento de bits (`<<`), que são consideravelmente mais rápidas. O Algoritmo \ref{alg:polydiv_int} ilustra esta técnica, que é padrão em implementações de alto desempenho de códigos cíclicos \cite{peterson1961cyclic}.
+Embora funcional, esta abordagem pode ser ineficiente em linguagens de alto nível, pois envolve a manipulação de listas ou vetores com laços explícitos.
+
+Uma otimização significativa consiste em representar os polinômios como números inteiros, onde cada bit corresponde a um coeficiente.
+Desta forma, as operações polinomiais são mapeadas para operações bit-a-bit nativas do processador, como XOR e deslocamento de bits (`<<`), que são consideravelmente mais rápidas.
+
+O Algoritmo \ref{alg:polydiv_int} ilustra esta técnica, que é padrão em implementações de alto desempenho de códigos cíclicos \cite{peterson1961cyclic}.
 
 \begin{algorithm}[H]
 \textbf{Algoritmo \thealgorithm: Resto polinomial em GF(2) usando representação inteira}\label{alg:polydiv_int}\par\smallskip
@@ -231,9 +233,82 @@ Enquanto o primeiro método possui o overhead da interpretação de código Pyth
 de desempenho é substancial, tornando a representação inteira a escolha preferencial para aplicações práticas.
 
 \section{Arquitetura proposta}%
-\begin{figure}[!ht]
-	\centering
-	\includegraphics[width=\textwidth]{img/Hysail-Architecture-Proposed.png}
-	\caption{Nova Arquitetura de HySail utilizando blockchain como meio de auditoria}
+
+A arquitetura da solução será dividida em diferentes partes/camadas, sendo que ao final existirá uma arquitetura geral da solução considerando todos os
+subdomínios existentes.
+
+\subsection{Arquitetura de Usuário}
+O usuário possui as responsabilidades de:
+\begin{itemize}
+    \item Dividir arquivos em blocos, utilizando os códigos de correção de erros (LtCodes) para garantir a integridade e disponibilidade dos dados.
+    \item Enviar arquivos para o sistema, que serão processados e armazenados de forma distribuída.
+    \item Enviar metadados dos arquivos, como nome, tamanho e hash, para a blockchain, garantindo a imutabilidade e rastreabilidade das informações.
+    \item Receber os blocos de arquivos solicitados
+\end{itemize}
+
+\subsubsection{Codificação e Decodificação de Arquivos}
+
+A codificação e decodificação de arquivos segue uma arquitetura em camadas, separando orquestração, processamento, metadados e acesso ao armazenamento distribuído. Diferentemente da arquitetura apresentada em Hysail, a nova arquitetura remove parte do processo complexo de decodificação do usuário
+e move para a auditoria realizada na Blockchain.
+
+A arquitetura de codificação adotada é descrita por:
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/EncryptArchitecture.png}
+    \caption{Arquitetura de codificação}
 \end{figure}
 
+
+Para simplificar o diagrama, algumas assinaturas foram removidas, mas a estrutura geral permanece. A classe Hysail é a controladora e responsável por todo o processo de orquestração, mais adiante parte desta
+arquitetura será abordada.
+
+Nesta arquitetura, é considerado que o usuário deve fornecer um arquivo responsável pelos dados dos servidores utilizados, tornando possível a codificação de maneira mais clara. Em HySAIL, parte destes arquivos
+eram distribuídos através de XML, nesta implementação foram utilizados arquivos JSON. 
+
+Os principais benefícios dessa arquitetura são:
+\begin{itemize}
+    \item separação clara de responsabilidades entre coordenação, algoritmo, metadados e infraestrutura;
+    \item possibilidade de substituição da camada de armazenamento sem alteração do núcleo de codificação;
+    \item rastreabilidade completa do ciclo de vida do arquivo por meio dos metadados persistidos;
+\end{itemize}
+
+A arquitetura de decodificação é similar, com a diferença de que o processo de recuperação e verificação dos blocos é simplificado, uma vez que a auditoria na Blockchain garante a integridade e autenticidade dos dados, reduzindo a complexidade do processo de decodificação para o usuário final.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/DecodingHysail.png}
+    \caption{Arquitetura de decodificação}
+\end{figure}
+
+\subsubsection{Comunicação com a Blockchain}
+
+A comunicação com a blockchain foi estruturada como uma camada de publicação, separada da codificação e do armazenamento dos pacotes. Assim, os metadados podem ser ancorados em um smart contract sem acoplar essa lógica ao núcleo algorítmico.
+
+A Figura~\ref{fig:uml-blockchain-publicacao} destaca a sequência arquitetural da publicação: \texttt{EncodingMetadata} fornece o estado do arquivo, \texttt{build\_file\_manifest} produz uma representação determinística do manifesto e \texttt{HysailChainPublisher} adapta esse objeto para a chamada \texttt{registerFile()} no smart contract.
+
+Essa decomposição separa montagem de evidências e submissão transacional. A deterministic serialization do manifesto assegura que a mesma entrada resulte no mesmo hash, condição necessária para verificabilidade e reprodutibilidade.
+
+Essa arquitetura está alinhada ao contrato \texttt{FileRegistry}, no qual são registrados apenas elementos compactos e verificáveis:
+\begin{itemize}
+    \item o identificador do arquivo;
+    \item o hash do manifesto;
+    \item a raiz dos pacotes;
+    \item o hash do arquivo original;
+    \item a URI dos metadados externos.
+\end{itemize}
+Em vez de armazenar na blockchain o conteúdo completo do arquivo ou todos os pacotes distribuídos, o sistema adota uma estratégia de ancoragem criptográfica. Desse modo, os dados volumosos permanecem off-chain, enquanto a cadeia armazena somente os compromissos criptográficos mínimos necessários para comprovar integridade, autoria da publicação e existência do registro em um dado instante.
+
+Do ponto de vista formal, essa solução combina duas arquiteturas complementares:
+\begin{itemize}
+    \item uma arquitetura em camadas, na qual a aplicação local produz metadados e manifestos, enquanto a camada de infraestrutura blockchain cuida exclusivamente da publicação e confirmação transacional;
+    \item uma arquitetura orientada a evidências, em que os objetos persistidos na cadeia não duplicam os dados operacionais, mas funcionam como âncoras verificáveis para os artefatos mantidos fora da cadeia.
+\end{itemize}
+Essa abordagem é particularmente adequada ao contexto de armazenamento distribuído, pois preserva a escalabilidade da solução ao mesmo tempo em que adiciona garantias de auditabilidade.
+
+Os benefícios da comunicação com a blockchain nessa arquitetura são diretos:
+\begin{itemize}
+    \item imutabilidade do registro de publicação, o que dificulta adulterações posteriores do manifesto e dos hashes associados;
+    \item rastreabilidade, uma vez que o recibo da transação associa o arquivo a um bloco, a um contrato e a um emissor específico;
+    \item fortalecimento da auditoria de integridade, porque qualquer consumidor pode recomputar o hash do manifesto e compará-lo com o valor registrado em cadeia;
+    \item desacoplamento entre armazenamento de dados e publicação em blockchain, reduzindo custos operacionais e evitando o uso inadequado da cadeia para persistência massiva.
+\end{itemize}
