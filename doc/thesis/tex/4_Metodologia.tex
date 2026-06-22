@@ -282,6 +282,104 @@ A arquitetura de decodificação é similar, com a diferença de que o processo 
 
 \subsubsection{Comunicação com a Blockchain}
 
+A relação com a Blockchain foi estruturada de forma híbrida,
+separando explicitamente as informações que exigem imutabilidade
+pública daquelas cujo processamento seria excessivamente custoso em
+ambiente \emph{on-chain}(dentro da cadeia).
+
+No lado do HySail, após a etapa de
+codificação, os metadados produzidos em \emph{Encode} são
+convertidos em um arquivo de manifesto. Em seguida, o \emph{publish\_command}
+da classe controladora (Hysail) constrói uma transação autenticada via
+\emph{Web3}, utilizando um provedor JSON-RPC HTTP, e invoca a função
+\emph{registerFile} do contrato \emph{FileRegistry}.
+
+Nessa operação, os principais dados enviados para a Blockchain podem ser descritos por
+meio dos seguintes elementos:
+
+\begin{itemize}
+    \item \textbf{Identificador do arquivo}: o campo \emph{fileId},
+    derivado do identificador do arquivo e posteriormente
+    transformado por \emph{keccak}, é utilizado como chave de registro no
+    contrato.
+    \item \textbf{Hash criptográfico do manifesto}: o conteúdo do
+    manifesto é serializado de forma canônica e transformado em um
+    \emph{hash} \emph{keccak}, permitindo verificar, posteriormente,
+    se os metadados consultados fora da cadeia permanecem inalterados.
+
+    Por ``serialização canônica'' entende-se a conversão do
+    manifesto para JSON determinístico, com ordem fixa das chaves e
+    sem variações de espaçamento, de modo que o mesmo conteúdo sempre
+    produza exatamente a mesma sequência de bytes antes do cálculo do
+    \emph{hash}.
+    \item \textbf{Raiz dos blocos codificados}: o campo
+    \emph{blockRoot}, convertido para o formato \emph{bytes32},
+    armazena o \emph{hash} SHA-256 da serialização canônica dos
+    metadados dos pacotes gerados durante a codificação. Apesar do
+    nome, esse campo não representa, nesta implementação, a raiz de
+    uma árvore de Merkle, mas sim um valor de \emph{hash} criptográfico único do
+    conjunto produzido.
+    \item \textbf{Hash do arquivo original}: o campo
+    \emph{originalFileHash}, também convertido para \emph{bytes32},
+    permite comparar o resultado reconstruído com o conteúdo
+    inicialmente publicado.
+    \item \textbf{Endereço de acesso aos metadados}: a
+    \emph{metadataUri} aponta para o manifesto ou para os metadados
+    disponibilizados fora da cadeia, servindo como elo entre a camada
+    \emph{on-chain} e os serviços externos.
+\end{itemize}
+
+Na Blockchain, não segue a lista completa de blocos nem o manifesto
+integral. Segue apenas um subconjunto mínimo de identificadores,
+\emph{hashes} e
+referências externas suficiente para verificação posterior. Entre
+esses campos está o \emph{blockRoot}, que registra o \emph{hash}
+SHA-256 dos metadados dos pacotes produzidos durante a codificação.
+
+Essa abordagem reduz o volume de dados persistidos no
+\emph{Smart Contract} e preserva, ao mesmo tempo, os vínculos
+necessários para auditoria. O contrato não armazena os blocos do
+arquivo nem o manifesto completo, ele mantém apenas o proprietário do
+registro, o \emph{hash} do manifesto, o \emph{hash} dos metadados dos
+pacotes codificados, o
+\emph{hash} do arquivo original e a URI de metadados.
+
+Qualquer consumidor pode recuperar o manifesto \emph{off-chain}(fora da cadeia),
+recomputar essa serialização JSON determinística e verificar se o
+\emph{hash} obtido coincide com o valor registrado.
+
+No lado da DApp, a comunicação segue a mesma lógica de mínima
+persistência \emph{on-chain}. A interface Web utiliza
+\emph{ethers.js} para conectar-se ao nó local, consultar os
+contadores dos contratos e submeter transações de registro de
+arquivo, registro de provedor e solicitação de reconstrução. Quando
+um pedido de recuperação é aberto, o reconstrutor opera \emph{off-chain}
+ sobre o manifesto compartilhado. Inicialmente, realiza um
+desafio de consistência junto ao provedor, combinando os MACs
+esperados conforme os polinômios definidos no manifesto.
+
+Somente após essa validação o bloco é transferido. Portanto, o bloco
+circula entre provedor e aplicação \emph{off-chain}, a Blockchain recebe
+apenas o \emph{hash} do identificador do bloco em \emph{bytes32}, o provedor responsável e o valor
+associado ao pagamento daquele bloco aceito.
+
+Uma vez recomposto o conteúdo, o reconstrutor calcula novamente o
+\emph{hash} do arquivo e compara-o ao valor originalmente publicado.
+Se a verificação for satisfeita, são emitidas transações de aceitação
+dos blocos válidos e de finalização do trabalho no contrato de
+\emph{download}. Em caso de falha, a operação é rejeitada e o
+reembolso correspondente é solicitado.
+
+Consequentemente, a Blockchain não substitui o mecanismo de
+codificação ou de reconstrução do HySail, mas atua como elemento de
+coordenação confiável entre registro, auditoria e liquidação.
+
+Por fim, o usuário não precisa possuir a responsabilidade de decodificar os blocos, uma vez que
+a classe \emph{Reconstructor} do HySail realiza essa tarefa de forma automática. Então, será necessário
+apenas fazer o download direto do arquivo reconstruído, sem a necessidade de lidar com os blocos individualmente.
+
+A arquitetura geral da solução, considerando a integração entre o HySail e a Blockchain, pode ser representada por:
+
 \begin{figure}[h]
     \centering
     \includegraphics[width=0.8\textwidth]{img/Blockchain.png}
