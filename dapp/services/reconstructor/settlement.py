@@ -33,11 +33,20 @@ class DownloadSettlementService:
         self._ensure_job_not_finalized(job_context)
 
         tx_hashes = [
-            self._accept_block(job_context, manifest["providerAddress"], block)
+            self._accept_block(
+                job_context, self._resolve_provider_address(manifest, block), block
+            )
             for block in accepted_blocks
         ]
         tx_hashes.append(self._finalize_job(job_context, result_hash))
         return job_context.job_id, tx_hashes
+
+    def _resolve_provider_address(self, manifest: dict, block: RetrievedBlock) -> str:
+        provider_address = block.provider_address or manifest.get("providerAddress")
+        if provider_address:
+            return provider_address
+
+        raise RuntimeError(f"Missing provider address for block {block.block_id}")
 
     def _get_download_manager(self, web3: Web3):
         deployments = json.loads(self.config.deployments_path.read_text())

@@ -11,14 +11,20 @@ def add_padding(data: bytes, block_size: int) -> bytes:
     # For large block sizes, append zero bytes plus a 4-byte trailer
     # containing the total padding size to avoid the single-byte limit.
     trailer_size = 4
-    zero_padding_size = (block_size - ((len(data) + trailer_size) % block_size)) % block_size
+    zero_padding_size = (
+        block_size - ((len(data) + trailer_size) % block_size)
+    ) % block_size
     if zero_padding_size == 0:
         zero_padding_size = block_size
 
     padding_size = zero_padding_size + trailer_size
-    return data + (b"\x00" * zero_padding_size) + padding_size.to_bytes(
-        trailer_size,
-        byteorder="big",
+    return (
+        data
+        + (b"\x00" * zero_padding_size)
+        + padding_size.to_bytes(
+            trailer_size,
+            byteorder="big",
+        )
     )
 
 
