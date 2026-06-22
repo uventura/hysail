@@ -3,7 +3,6 @@ from functools import reduce
 import numpy as np
 
 from hysail.encryption.block import Block
-from hysail.encryption.local_mac import LocalMac
 from hysail.logger.progress import advance_progress, create_progress_task, get_progress
 import hysail.utils.galois as ga
 import hysail.utils.operators as op
@@ -105,8 +104,9 @@ class Encode:
             mac_blocks[index] = []
 
             for p_index, polynomial in enumerate(self._polynomials):
-                mac = LocalMac(
-                    mac=ga.gf2_poly_mod(representation, polynomial),
+                mac = op.calculate_mac_for_block(
+                    representation=representation,
+                    polynomial=polynomial,
                     polynomial_index=p_index,
                     block_index=index,
                 )

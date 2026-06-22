@@ -104,7 +104,10 @@ class Decode:
         if not isinstance(block, Block):
             self._challenge_server(block.server, block)
             data = block.server.download_block(block.index)
-            if block.block_id is not None and block.block_id not in self._accepted_blocks:
+            if (
+                block.block_id is not None
+                and block.block_id not in self._accepted_blocks
+            ):
                 self._accepted_blocks[block.block_id] = block
         else:
             data = block.data
