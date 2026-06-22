@@ -25,7 +25,8 @@ def _build_decoder(local_blocks=None, polynomials=None, local_mac=None):
     decoder._servers = []
     decoder._polynomials = polynomials or []
     decoder._local_blocks = local_blocks or {}
-    decoder._local_mac = local_mac or []
+    decoder._local_mac = local_mac or {}
+    decoder._accepted_blocks = {}
     return decoder
 
 
@@ -76,7 +77,7 @@ def test_when_solving_partial_block_then_downloads_server_block_for_non_block_en
     server.receive_challenge = receive_challenge
 
     mac = ga.gf2_poly_mod(ga.bytes_to_poly_coeffs(b"C"), polynomial)
-    local_mac = [[LocalMac(mac=mac, polynomial_index=0, block_index=0)]]
+    local_mac = {0: {0: LocalMac(mac=mac, polynomial_index=0, block_index=0)}}
 
     decoder = _build_decoder(polynomials=[polynomial], local_mac=local_mac)
 
@@ -159,3 +160,46 @@ def test_when_metadata_is_loaded_then_decode_reconstructs_runtime_objects(
     assert decoder._local_mac[0][0].block_index == 0
     assert decoder._local_mac[1][0].block_index == 1
     assert decoder.decode() == b"AB"
+
+
+def test_when_decoder_is_built_from_runtime_data_then_returns_downloaded_blocks():
+    server = DummyServer(b"A")
+    polynomial = np.array([1, 1], dtype=np.uint8)
+
+    def receive_challenge(polynomial_arg, check_block_index):
+        assert check_block_index == 0
+        assert np.array_equal(polynomial_arg, polynomial)
+        return np.array([0], dtype=np.uint8)
+
+    server.receive_challenge = receive_challenge
+    local_blocks = {
+        1: [
+            LocalBlock(
+                index=0,
+                degree=1,
+                indices=[0],
+                server=server,
+                block_id="block-0",
+                price_wei=5,
+            )
+        ]
+    }
+    local_mac = {
+        0: {
+            0: LocalMac(
+                mac=np.array([0], dtype=np.uint8), polynomial_index=0, block_index=0
+            )
+        }
+    }
+
+    decoder = Decode(
+        polynomials=[polynomial],
+        local_blocks=local_blocks,
+        local_mac=local_mac,
+    )
+
+    assert decoder.decode() == b"A"
+    accepted_blocks = decoder.get_accepted_blocks()
+    assert len(accepted_blocks) == 1
+    assert accepted_blocks[0].block_id == "block-0"
+    assert accepted_blocks[0].price_wei == 5

@@ -9,6 +9,8 @@ class LocalBlock:
     degree: int
     indices: list[int]
     server: Server
+    block_id: str | None = None
+    price_wei: int | None = None
 
 
 class Block:

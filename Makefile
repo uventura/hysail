@@ -1,5 +1,7 @@
 .PHONY: environment build format test clean dapp_clean server_storage lorem_example lorem_example_debug dapp_publish_example
 
+VENV_BIN := ./hysail_env/bin
+
 environment:
 	. ./scripts/start.sh && ./scripts/build.sh
 
@@ -7,11 +9,11 @@ build:
 	./scripts/build.sh
 
 format:
-	ruff format .
-	black .
+	$(VENV_BIN)/ruff format .
+	$(VENV_BIN)/black .
 
 test:
-	pytest
+	$(VENV_BIN)/pytest
 
 clean:
 	rm -rf output/*
@@ -36,8 +38,8 @@ lorem_example:
 	mkdir -p output/server_storage/server_1
 	mkdir -p output/server_storage/server_2
 	mkdir -p output/server_storage/server_3
-	hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
-	hysail decode --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/
+	$(VENV_BIN)/hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
+	$(VENV_BIN)/hysail decode --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/
 
 lorem_example_debug:
 	rm -rf output/*
@@ -46,13 +48,13 @@ lorem_example_debug:
 	mkdir -p output/server_storage/server_1
 	mkdir -p output/server_storage/server_2
 	mkdir -p output/server_storage/server_3
-	hysail encode --debug --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
-	hysail decode --debug --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
+	$(VENV_BIN)/hysail encode --debug --server-list examples/server_list_example.json --metadata-output output/ examples/lorem_ipsum.txt
+	$(VENV_BIN)/hysail decode --debug --server-file examples/server_list_example.json  output/lorem_ipsum_metadata.pkl --output-file output/lorem_ipsum_decoded.txt
 
 dapp_publish_example:
 	./scripts/build.sh
 	mkdir -p output/server_storage/server_1
 	mkdir -p output/server_storage/server_2
 	mkdir -p output/server_storage/server_3
-	hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/hello.txt
-	hysail publish output/hello_metadata.pkl --deployment-file dapp/packages/shared/deployments/local.json --metadata-uri http://127.0.0.1:8000/manifest --manifest-output output/hello_chain_manifest.json
+	$(VENV_BIN)/hysail encode --server-list examples/server_list_example.json --metadata-output output/ examples/hello.txt
+	$(VENV_BIN)/hysail publish output/hello_metadata.pkl --deployment-file dapp/packages/shared/deployments/local.json --metadata-uri http://127.0.0.1:8000/manifest --manifest-output output/hello_chain_manifest.json
