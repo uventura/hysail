@@ -13,7 +13,7 @@ guarda autenticações algébricas suficientes para verificar se os blocos recon
 o estado original do arquivo.
 
 \section{Online Codes (Fountain Codes)}%
-Um dos pontos necessários para garantir que a disponibilidade do HySail seja alta é o uso de códigos de erasure do tipo \emph{Online Codes},
+Um dos pontos necessários para garantir que a disponibilidade do HySail seja alta é o uso de \emph{erasure codes} do tipo \emph{Online Codes},
 uma classe de \emph{Fountain Codes} rateless: o codificador pode continuar produzindo símbolos redundantes até que a quantidade de informação
 recuperável seja suficiente para reconstruir \(F\)~\cite{amaral2013hysail}.
 
@@ -67,7 +67,7 @@ inteiro. A segurança depende do resto da divisão polinomial e do uso de polin�
 grau \(\lambda\), o que leva à interpretação do MAC como uma família de funções hash 2-universais.
 \end{enumerate}
 
-Em termos de colisão, o protocólo garante que a probabilidade de dois blocos distintos produzirem o mesmo valor de
+Em termos de colisão, o protocolo garante que a probabilidade de dois blocos distintos produzirem o mesmo valor de
 MAC é de ordem \(2^{-\lambda}\). Isso permite tratar \(h_{i,j}\) como uma validação de integridade de baixo custo,
 formalmente associada ao bloco original.
 
@@ -142,8 +142,8 @@ que foi identificado como corrompido. Essa eficiência é possível pela separa�
 metadados de composição localmente e pode operar sobre blocos isolados sem precisar do contexto completo.
 
 \section{Auditoria}%
-HySail permite dois modelos de auditoria, bounded e unbounded. Em ambos, o cliente escolhe um polinômio
-primitivo \(P_j(x)\) e verifica um subconjunto de blocos por meio de um desafio-resposta. No modelo bounded,
+HySail permite dois modelos de auditoria, \textit{bounded} e \textit{unbounded}. Em ambos, o cliente escolhe um polinômio
+primitivo \(P_j(x)\) e verifica um subconjunto de blocos por meio de um desafio-resposta. No modelo \textit{bounded},
 o cliente envia também os índices dos blocos que devem ser testados. Por exemplo, se o desafio é para os blocos \(m_1\), \(m_5\) e \(m_{11}\), o cliente espera receber
 \[
 A(x) = \left(\bigoplus_{\eta \in \mathrm{list}} c_\eta(x)\right) \bmod P_j(x).

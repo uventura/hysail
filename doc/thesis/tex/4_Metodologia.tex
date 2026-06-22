@@ -4,7 +4,7 @@ apresentados os principais aspectos da nova arquitetura proposta.
 
 \section{LtCode e OnlineCodes}
 
-Os \emph{erasure codes} desempenham um papel fundamental em sistemas distribuídos modernos, particularmente em ambientes blockchain e de armazenamento distribuído. Entre as várias famílias de \emph{erasure codes}, os \emph{LtCodes} (Luby Transform codes) e \emph{OnlineCodes} representam duas abordagens distintas para o problema de recuperação de dados em cenários de falhas parciais.
+Como já apresentado, \emph{erasure codes} desempenham um papel fundamental em sistemas distribuídos modernos. Entre as várias famílias de \emph{erasure codes}, os \emph{LtCodes} (Luby Transform codes) e \emph{OnlineCodes} representam duas abordagens distintas para o problema de recuperação de dados em cenários de falhas parciais.
 
 \subsection{Definições e Características}
 
@@ -60,7 +60,7 @@ onde $\bigoplus$ denota a operação XOR (ou soma em GF(2)), e $S_i$ é um subco
 \end{cases}
 \end{equation}
 
-A decodificação procede iterativamente, identificando símbolos codificados com grau 1 (que correspondem diretamente a símbolos de origem) e propagando a informação até recuperar todos os $k$ símbolos originais. Este processo é denominado \emph{belief propagation}.
+A decodificação procede iterativamente, identificando símbolos codificados com grau 1 (que correspondem diretamente a símbolos de origem) e propagando a informação até recuperar todos os $k$ símbolos originais. Sendo este processo o \emph{belief propagation}.
 
 \section{OnlineCodes}
 
@@ -151,7 +151,7 @@ Dados dois polinômios $m(x)$ (dividendo) e $p(x)$ (divisor) com coeficientes em
 m(x) = q(x) \cdot p(x) \oplus r(x)
 \end{equation}
 
-onde $\oplus$ representa a adição polinomial (XOR coeficiente a coeficiente) e a condição principal é que o grau do resto seja estritamente menor que o grau do divisor:
+A condição principal é que o grau do resto seja estritamente menor que o grau do divisor:
 
 \begin{equation}
 \text{grau}(r(x)) < \text{grau}(p(x))
@@ -229,12 +229,12 @@ O Algoritmo \ref{alg:polydiv_int} ilustra esta técnica, que é padrão em imple
 \end{algorithmic}
 \end{algorithm}
 
-Enquanto o primeiro método possui o overhead da interpretação de código Python para cada acesso a um coeficiente, o segundo utiliza operações de número inteiro, executadas diretamente em hardware. Para polinômios de grau elevado, a diferença 
+Enquanto o primeiro método possui o overhead da interpretação para cada acesso a um coeficiente, o segundo utiliza operações de número inteiro, executadas diretamente em hardware. Para polinômios de grau elevado, a diferença 
 de desempenho é substancial, tornando a representação inteira a escolha preferencial para aplicações práticas.
 
 \section{Arquitetura proposta}%
 
-A arquitetura da solução será dividida em diferentes partes/camadas, sendo que ao final existirá uma arquitetura geral da solução considerando todos os
+A arquitetura da solução será dividida em diferentes partes, sendo que ao final existirá uma arquitetura geral da solução considerando todos os
 subdomínios existentes.
 
 \subsection{Arquitetura de Usuário}
@@ -282,33 +282,9 @@ A arquitetura de decodificação é similar, com a diferença de que o processo 
 
 \subsubsection{Comunicação com a Blockchain}
 
-A comunicação com a blockchain foi estruturada como uma camada de publicação, separada da codificação e do armazenamento dos pacotes. Assim, os metadados podem ser ancorados em um smart contract sem acoplar essa lógica ao núcleo algorítmico.
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{img/Blockchain.png}
+    \caption{Arquitetura do DApp e integração com Hysail}
+\end{figure}
 
-A Figura~\ref{fig:uml-blockchain-publicacao} destaca a sequência arquitetural da publicação: \texttt{EncodingMetadata} fornece o estado do arquivo, \texttt{build\_file\_manifest} produz uma representação determinística do manifesto e \texttt{HysailChainPublisher} adapta esse objeto para a chamada \texttt{registerFile()} no smart contract.
-
-Essa decomposição separa montagem de evidências e submissão transacional. A deterministic serialization do manifesto assegura que a mesma entrada resulte no mesmo hash, condição necessária para verificabilidade e reprodutibilidade.
-
-Essa arquitetura está alinhada ao contrato \texttt{FileRegistry}, no qual são registrados apenas elementos compactos e verificáveis:
-\begin{itemize}
-    \item o identificador do arquivo;
-    \item o hash do manifesto;
-    \item a raiz dos pacotes;
-    \item o hash do arquivo original;
-    \item a URI dos metadados externos.
-\end{itemize}
-Em vez de armazenar na blockchain o conteúdo completo do arquivo ou todos os pacotes distribuídos, o sistema adota uma estratégia de ancoragem criptográfica. Desse modo, os dados volumosos permanecem off-chain, enquanto a cadeia armazena somente os compromissos criptográficos mínimos necessários para comprovar integridade, autoria da publicação e existência do registro em um dado instante.
-
-Do ponto de vista formal, essa solução combina duas arquiteturas complementares:
-\begin{itemize}
-    \item uma arquitetura em camadas, na qual a aplicação local produz metadados e manifestos, enquanto a camada de infraestrutura blockchain cuida exclusivamente da publicação e confirmação transacional;
-    \item uma arquitetura orientada a evidências, em que os objetos persistidos na cadeia não duplicam os dados operacionais, mas funcionam como âncoras verificáveis para os artefatos mantidos fora da cadeia.
-\end{itemize}
-Essa abordagem é particularmente adequada ao contexto de armazenamento distribuído, pois preserva a escalabilidade da solução ao mesmo tempo em que adiciona garantias de auditabilidade.
-
-Os benefícios da comunicação com a blockchain nessa arquitetura são diretos:
-\begin{itemize}
-    \item imutabilidade do registro de publicação, o que dificulta adulterações posteriores do manifesto e dos hashes associados;
-    \item rastreabilidade, uma vez que o recibo da transação associa o arquivo a um bloco, a um contrato e a um emissor específico;
-    \item fortalecimento da auditoria de integridade, porque qualquer consumidor pode recomputar o hash do manifesto e compará-lo com o valor registrado em cadeia;
-    \item desacoplamento entre armazenamento de dados e publicação em blockchain, reduzindo custos operacionais e evitando o uso inadequado da cadeia para persistência massiva.
-\end{itemize}
